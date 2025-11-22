@@ -126,12 +126,16 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
               docType: docType,
             );
 
-      await appProvider.addDocument(document);
+      if (document != null) {
+        await appProvider.addDocument(document);
+      } else {
+        throw Exception('Document capture was cancelled');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${docType.name} uploaded successfully'),
+            content: Text('${docType.display} uploaded successfully'),
             backgroundColor: Colors.green,
           ),
         );
