@@ -54,10 +54,16 @@ class _Step1ApplicantDetailsScreenState
       _fullNameController.text = app.applicantFullName ?? '';
       _aadhaarController.text = app.applicantAadhaar ?? '';
       _mobileController.text = app.applicantMobile ?? '';
-      _selectedGender = app.applicantGender;
+      _selectedGender = app.applicantGender != null
+          ? Gender.fromValue(app.applicantGender!)
+          : null;
       _selectedDob = app.applicantDob;
-      _selectedCaste = app.caste;
-      _selectedMaritalStatus = app.maritalStatus;
+      _selectedCaste = app.caste != null
+          ? Caste.fromValue(app.caste!)
+          : null;
+      _selectedMaritalStatus = app.maritalStatus != null
+          ? MaritalStatus.fromValue(app.maritalStatus!)
+          : null;
       _selectedMarriageDate = app.marriageDate;
     }
   }
@@ -133,7 +139,7 @@ class _Step1ApplicantDetailsScreenState
       return;
     }
 
-    if (_selectedGender != Gender.F) {
+    if (_selectedGender != Gender.female) {
       _showError('Only Female applicants are eligible for PMUY V3');
       return;
     }
@@ -153,7 +159,7 @@ class _Step1ApplicantDetailsScreenState
       return;
     }
 
-    if (_selectedMaritalStatus == MaritalStatus.MARRIED &&
+    if (_selectedMaritalStatus == MaritalStatus.married &&
         _selectedMarriageDate == null) {
       _showError('Please select marriage date');
       return;
@@ -234,7 +240,7 @@ class _Step1ApplicantDetailsScreenState
                         ),
                         textCapitalization: TextCapitalization.words,
                         onChanged: (value) => _saveField('applicant_full_name', value),
-                        validator: Validators.validateName,
+                        validator: (value) => Validators.validateName(value, 'Full name'),
                       ),
                       SizedBox(height: 16.h),
 
@@ -251,16 +257,16 @@ class _Step1ApplicantDetailsScreenState
                         items: Gender.values.map((gender) {
                           return DropdownMenuItem(
                             value: gender,
-                            child: Text(gender.name),
+                            child: Text(gender.display),
                           );
                         }).toList(),
                         onChanged: (value) {
                           setState(() => _selectedGender = value);
-                          _saveField('applicant_gender', value);
+                          _saveField('applicant_gender', value?.value);
                         },
                         validator: (value) {
                           if (value == null) return 'Please select gender';
-                          if (value != Gender.F) {
+                          if (value != Gender.female) {
                             return 'Only Female applicants are eligible';
                           }
                           return null;
@@ -351,12 +357,12 @@ class _Step1ApplicantDetailsScreenState
                         items: Caste.values.map((caste) {
                           return DropdownMenuItem(
                             value: caste,
-                            child: Text(caste.name),
+                            child: Text(caste.display),
                           );
                         }).toList(),
                         onChanged: (value) {
                           setState(() => _selectedCaste = value);
-                          _saveField('caste', value);
+                          _saveField('caste', value?.value);
                         },
                         validator: (value) =>
                             value == null ? 'Please select caste' : null,
@@ -376,12 +382,12 @@ class _Step1ApplicantDetailsScreenState
                         items: MaritalStatus.values.map((status) {
                           return DropdownMenuItem(
                             value: status,
-                            child: Text(status.name),
+                            child: Text(status.display),
                           );
                         }).toList(),
                         onChanged: (value) {
                           setState(() => _selectedMaritalStatus = value);
-                          _saveField('marital_status', value);
+                          _saveField('marital_status', value?.value);
                         },
                         validator: (value) =>
                             value == null ? 'Please select marital status' : null,
@@ -389,7 +395,7 @@ class _Step1ApplicantDetailsScreenState
                       SizedBox(height: 16.h),
 
                       // Marriage Date (if married)
-                      if (_selectedMaritalStatus == MaritalStatus.MARRIED) ...[
+                      if (_selectedMaritalStatus == MaritalStatus.married) ...[
                         InkWell(
                           onTap: () => _selectDate(context, true),
                           child: InputDecorator(

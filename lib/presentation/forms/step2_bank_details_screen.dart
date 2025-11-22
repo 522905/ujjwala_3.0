@@ -151,7 +151,7 @@ class _Step2BankDetailsScreenState extends State<Step2BankDetailsScreen> {
                         ),
                         textCapitalization: TextCapitalization.words,
                         onChanged: (value) => _saveField('bank_account_name', value),
-                        validator: Validators.validateName,
+                        validator: (value) => Validators.validateName(value, 'Account holder name'),
                       ),
                       SizedBox(height: 16.h),
 

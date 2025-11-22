@@ -28,7 +28,6 @@ class TusUploadService {
       final client = TusClient(
         url: Uri.parse(ApiConfig.tusUploadUrl),
         file: file,
-        store: TusMemoryStore(),
       );
 
       // Set metadata

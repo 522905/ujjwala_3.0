@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../providers/application_provider.dart';
 import '../../core/enums/app_enums.dart';
 import '../../data/repositories/document_repository.dart';
+import '../../data/services/tus_upload_service.dart';
+import '../../data/services/compression_service.dart';
 import 'step7_consents_review_screen.dart';
 
 /// Step 6: Documents Upload
@@ -30,7 +32,10 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
   @override
   void initState() {
     super.initState();
-    _documentRepository = DocumentRepository();
+    _documentRepository = DocumentRepository(
+      TusUploadService(),
+      CompressionService(),
+    );
   }
 
   // Required documents
@@ -42,34 +47,34 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
       'mandatory': true,
     },
     {
-      'type': DocumentType.proofOfIdentity,
-      'title': 'Proof of Identity',
-      'description': 'Aadhaar Card, Voter ID, or Passport',
+      'type': DocumentType.currentAddressPoa,
+      'title': 'Current Address Proof',
+      'description': 'Proof of current address',
       'mandatory': true,
     },
     {
-      'type': DocumentType.proofOfAddress,
-      'title': 'Proof of Address',
-      'description': 'Ration Card, Electricity Bill, or Rent Agreement',
+      'type': DocumentType.permanentAddressPoa,
+      'title': 'Permanent Address Proof',
+      'description': 'Proof of permanent address',
       'mandatory': true,
     },
     {
-      'type': DocumentType.incomeCertificate,
-      'title': 'Income Certificate',
-      'description': 'Issued by competent authority',
+      'type': DocumentType.familyCompositionDoc,
+      'title': 'Family Composition Document',
+      'description': 'Ration card or family certificate',
+      'mandatory': true,
+    },
+    {
+      'type': DocumentType.bankProof,
+      'title': 'Bank Proof',
+      'description': 'Bank passbook or cancelled cheque',
       'mandatory': true,
     },
     {
       'type': DocumentType.casteCertificate,
       'title': 'Caste Certificate',
       'description': 'SC/ST/OBC certificate',
-      'mandatory': true,
-    },
-    {
-      'type': DocumentType.migrationCertificate,
-      'title': 'Migration Certificate',
-      'description': 'Proof of migration from another state',
-      'mandatory': true,
+      'mandatory': false,
     },
   ];
 
