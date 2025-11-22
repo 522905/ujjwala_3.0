@@ -1,0 +1,615 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
+import '../../providers/application_provider.dart';
+import '../../core/enums/app_enums.dart';
+import '../../data/models/local_family_member.dart';
+import '../../data/repositories/document_repository.dart';
+import 'step6_documents_screen.dart';
+
+/// Step 5: Family Members
+///
+/// Manage family members with Aadhaar photo uploads
+/// Validation: Exactly 1 member with relation SELF required
+
+class Step5FamilyMembersScreen extends StatefulWidget {
+  const Step5FamilyMembersScreen({super.key});
+
+  @override
+  State<Step5FamilyMembersScreen> createState() =>
+      _Step5FamilyMembersScreenState();
+}
+
+class _Step5FamilyMembersScreenState extends State<Step5FamilyMembersScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Step 5: Family Members'),
+        backgroundColor: Colors.blue[700],
+        foregroundColor: Colors.white,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Progress Indicator
+            LinearProgressIndicator(
+              value: 5 / 7,
+              backgroundColor: Colors.grey[300],
+              color: Colors.blue[700],
+            ),
+
+            Expanded(
+              child: Consumer<ApplicationProvider>(
+                builder: (context, appProvider, _) {
+                  final members = appProvider.familyMembers;
+                  final hasSelf = members.any((m) => m.isSelf);
+
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.all(24.w),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Family Members',
+                                style: TextStyle(
+                                  fontSize: 20.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                'Step 5 of 7 • ${members.length} member(s)',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              SizedBox(height: 8.h),
+
+                              // SELF member requirement
+                              Container(
+                                padding: EdgeInsets.all(12.w),
+                                decoration: BoxDecoration(
+                                  color: hasSelf
+                                      ? Colors.green[50]
+                                      : Colors.orange[50],
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  border: Border.all(
+                                    color: hasSelf
+                                        ? Colors.green[300]!
+                                        : Colors.orange[300]!,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      hasSelf
+                                          ? Icons.check_circle
+                                          : Icons.warning,
+                                      color: hasSelf
+                                          ? Colors.green[700]
+                                          : Colors.orange[700],
+                                    ),
+                                    SizedBox(width: 12.w),
+                                    Expanded(
+                                      child: Text(
+                                        hasSelf
+                                            ? 'SELF member added ✓'
+                                            : 'Required: Add exactly 1 SELF member',
+                                        style: TextStyle(
+                                          fontSize: 13.sp,
+                                          color: hasSelf
+                                              ? Colors.green[900]
+                                              : Colors.orange[900],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 24.h),
+
+                              // Add Family Member Button
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _addFamilyMember(context),
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Add Family Member'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue[700],
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 24.h),
+
+                              // Family Members List
+                              if (members.isEmpty)
+                                Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(32.w),
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.people_outline,
+                                          size: 64.sp,
+                                          color: Colors.grey[400],
+                                        ),
+                                        SizedBox(height: 16.h),
+                                        Text(
+                                          'No family members added yet',
+                                          style: TextStyle(
+                                            fontSize: 16.sp,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
+                                ...members.map((member) =>
+                                    _buildFamilyMemberCard(context, member)),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Next Button
+                      Container(
+                        padding: EdgeInsets.all(24.w),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, -2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.blue[700],
+                                  side: BorderSide(color: Colors.blue[700]!),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12.r),
+                                  ),
+                                  padding: EdgeInsets.symmetric(vertical: 16.h),
+                                ),
+                                child: const Text('Back'),
+                              ),
+                            ),
+                            SizedBox(width: 16.w),
+                            Expanded(
+                              flex: 2,
+                              child: ElevatedButton(
+                                onPressed: hasSelf
+                                    ? () => _proceedToNextStep(context)
+                                    : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue[700],
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12.r),
+                                  ),
+                                  padding: EdgeInsets.symmetric(vertical: 16.h),
+                                ),
+                                child: const Text('Next: Documents'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFamilyMemberCard(
+      BuildContext context, LocalFamilyMember member) {
+    final hasPhotos = member.arePhotosUploaded;
+
+    return Card(
+      margin: EdgeInsets.only(bottom: 16.h),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.r),
+        side: BorderSide(
+          color: member.isSelf ? Colors.blue[300]! : Colors.grey[300]!,
+          width: member.isSelf ? 2 : 1,
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Icon(Icons.person, color: Colors.blue[700]),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        member.fullName,
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        member.relationToApplicant.name,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (member.isSelf)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[700],
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                    child: Text(
+                      'SELF',
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+
+            // Member details
+            Row(
+              children: [
+                Icon(Icons.credit_card, size: 16.sp, color: Colors.grey[600]),
+                SizedBox(width: 8.w),
+                Text(
+                  'Aadhaar: ${member.aadhaarNumber}',
+                  style: TextStyle(fontSize: 13.sp),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+
+            // Photo upload status
+            Row(
+              children: [
+                Icon(
+                  hasPhotos ? Icons.check_circle : Icons.warning,
+                  size: 16.sp,
+                  color: hasPhotos ? Colors.green : Colors.orange,
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  hasPhotos
+                      ? 'Aadhaar photos uploaded'
+                      : 'Aadhaar photos not uploaded',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: hasPhotos ? Colors.green : Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _uploadAadhaarPhotos(context, member),
+                    icon: Icon(
+                      hasPhotos ? Icons.check : Icons.camera_alt,
+                      size: 16.sp,
+                    ),
+                    label: Text(hasPhotos ? 'Re-upload' : 'Upload Photos'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor:
+                          hasPhotos ? Colors.green : Colors.blue[700],
+                      side: BorderSide(
+                        color: hasPhotos ? Colors.green : Colors.blue[700]!,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                IconButton(
+                  onPressed: () => _deleteFamilyMember(context, member),
+                  icon: const Icon(Icons.delete),
+                  color: Colors.red,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addFamilyMember(BuildContext context) async {
+    final result = await showDialog<LocalFamilyMember>(
+      context: context,
+      builder: (_) => const FamilyMemberDialog(),
+    );
+
+    if (result != null && context.mounted) {
+      final appProvider =
+          Provider.of<ApplicationProvider>(context, listen: false);
+      await appProvider.saveFamilyMember(result);
+    }
+  }
+
+  Future<void> _uploadAadhaarPhotos(
+      BuildContext context, LocalFamilyMember member) async {
+    // TODO: Implement Aadhaar photo capture
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Aadhaar photo capture - Implementation pending'),
+      ),
+    );
+  }
+
+  Future<void> _deleteFamilyMember(
+      BuildContext context, LocalFamilyMember member) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Family Member'),
+        content: Text('Remove ${member.fullName}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final appProvider =
+          Provider.of<ApplicationProvider>(context, listen: false);
+      await appProvider.deleteFamilyMember(member.localId);
+    }
+  }
+
+  void _proceedToNextStep(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const Step6DocumentsScreen(),
+      ),
+    );
+  }
+}
+
+/// Dialog for adding/editing family member
+class FamilyMemberDialog extends StatefulWidget {
+  final LocalFamilyMember? member;
+
+  const FamilyMemberDialog({super.key, this.member});
+
+  @override
+  State<FamilyMemberDialog> createState() => _FamilyMemberDialogState();
+}
+
+class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _aadhaarController = TextEditingController();
+
+  RelationToApplicant? _selectedRelation;
+  Gender? _selectedGender;
+  DateTime? _selectedDob;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.member != null) {
+      _fullNameController.text = widget.member!.fullName;
+      _aadhaarController.text = widget.member!.aadhaarNumber;
+      _selectedRelation = widget.member!.relationToApplicant;
+      _selectedGender = widget.member!.gender;
+      _selectedDob = widget.member!.dob;
+    }
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _aadhaarController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDob ?? DateTime(2000),
+      firstDate: DateTime(1940),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      setState(() => _selectedDob = picked);
+    }
+  }
+
+  void _save() {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedRelation == null) {
+      _showError('Please select relation');
+      return;
+    }
+
+    if (_selectedGender == null) {
+      _showError('Please select gender');
+      return;
+    }
+
+    if (_selectedDob == null) {
+      _showError('Please select date of birth');
+      return;
+    }
+
+    final appProvider = Provider.of<ApplicationProvider>(context, listen: false);
+    final app = appProvider.currentApplication;
+
+    if (app == null) {
+      _showError('No active application');
+      return;
+    }
+
+    final member = LocalFamilyMember(
+      localId: widget.member?.localId ?? const Uuid().v4(),
+      applicationLocalId: app.localId,
+      fullName: _fullNameController.text.trim(),
+      aadhaarNumber: _aadhaarController.text.trim(),
+      relationToApplicant: _selectedRelation!,
+      gender: _selectedGender!,
+      dob: _selectedDob!,
+    );
+
+    Navigator.pop(context, member);
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.member == null ? 'Add Family Member' : 'Edit Family Member'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _fullNameController,
+                decoration: const InputDecoration(labelText: 'Full Name *'),
+                textCapitalization: TextCapitalization.words,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter name';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16.h),
+              TextFormField(
+                controller: _aadhaarController,
+                decoration: const InputDecoration(labelText: 'Aadhaar Number *'),
+                keyboardType: TextInputType.number,
+                maxLength: 12,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter Aadhaar';
+                  }
+                  if (value.trim().length != 12) {
+                    return 'Aadhaar must be 12 digits';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16.h),
+              DropdownButtonFormField<RelationToApplicant>(
+                value: _selectedRelation,
+                decoration: const InputDecoration(labelText: 'Relation *'),
+                items: RelationToApplicant.values.map((relation) {
+                  return DropdownMenuItem(
+                    value: relation,
+                    child: Text(relation.name),
+                  );
+                }).toList(),
+                onChanged: (value) => setState(() => _selectedRelation = value),
+              ),
+              SizedBox(height: 16.h),
+              DropdownButtonFormField<Gender>(
+                value: _selectedGender,
+                decoration: const InputDecoration(labelText: 'Gender *'),
+                items: Gender.values.map((gender) {
+                  return DropdownMenuItem(
+                    value: gender,
+                    child: Text(gender.name),
+                  );
+                }).toList(),
+                onChanged: (value) => setState(() => _selectedGender = value),
+              ),
+              SizedBox(height: 16.h),
+              InkWell(
+                onTap: () => _selectDate(context),
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Date of Birth *'),
+                  child: Text(
+                    _selectedDob != null
+                        ? DateFormat('dd/MM/yyyy').format(_selectedDob!)
+                        : 'Select date',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _save,
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
