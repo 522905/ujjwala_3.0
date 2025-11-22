@@ -25,9 +25,10 @@ dependencies:
   dio: ^5.7.0
   connectivity_plus: ^6.0.5
   http: ^1.2.2
+  http_parser: ^4.0.2
 
-  # TUS Upload
-  tus_client: ^0.1.6
+  # File Upload (Using Dio for multipart uploads instead of TUS)
+  # TUS protocol can be implemented using Dio interceptors if needed
 
   # Image/File Handling
   image_picker: ^1.1.2
