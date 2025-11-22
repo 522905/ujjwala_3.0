@@ -1,0 +1,80 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'local_family_member.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
+class LocalFamilyMemberAdapter extends TypeAdapter<LocalFamilyMember> {
+  @override
+  final int typeId = 2;
+
+  @override
+  LocalFamilyMember read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return LocalFamilyMember(
+      localId: fields[0] as String,
+      applicationLocalId: fields[1] as String,
+      fullName: fields[2] as String?,
+      relationToApplicant: fields[3] as String?,
+      gender: fields[4] as String?,
+      dob: fields[5] as DateTime?,
+      aadhaarNumber: fields[6] as String?,
+      uidFrontLocalPath: fields[7] as String?,
+      uidBackLocalPath: fields[8] as String?,
+      uidFrontTusUrl: fields[9] as String?,
+      uidBackTusUrl: fields[10] as String?,
+      rationCardAvailable: fields[11] as bool,
+      createdAt: fields[12] as DateTime?,
+      updatedAt: fields[13] as DateTime?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, LocalFamilyMember obj) {
+    writer
+      ..writeByte(14)
+      ..writeByte(0)
+      ..write(obj.localId)
+      ..writeByte(1)
+      ..write(obj.applicationLocalId)
+      ..writeByte(2)
+      ..write(obj.fullName)
+      ..writeByte(3)
+      ..write(obj.relationToApplicant)
+      ..writeByte(4)
+      ..write(obj.gender)
+      ..writeByte(5)
+      ..write(obj.dob)
+      ..writeByte(6)
+      ..write(obj.aadhaarNumber)
+      ..writeByte(7)
+      ..write(obj.uidFrontLocalPath)
+      ..writeByte(8)
+      ..write(obj.uidBackLocalPath)
+      ..writeByte(9)
+      ..write(obj.uidFrontTusUrl)
+      ..writeByte(10)
+      ..write(obj.uidBackTusUrl)
+      ..writeByte(11)
+      ..write(obj.rationCardAvailable)
+      ..writeByte(12)
+      ..write(obj.createdAt)
+      ..writeByte(13)
+      ..write(obj.updatedAt);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LocalFamilyMemberAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
