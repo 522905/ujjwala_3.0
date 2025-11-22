@@ -27,8 +27,8 @@ dependencies:
   http: ^1.2.2
   http_parser: ^4.0.2
 
-  # File Upload (Using Dio for multipart uploads instead of TUS)
-  # TUS protocol can be implemented using Dio interceptors if needed
+  # TUS Upload
+  tusc: ^2.1.0
 
   # Image/File Handling
   image_picker: ^1.1.2
