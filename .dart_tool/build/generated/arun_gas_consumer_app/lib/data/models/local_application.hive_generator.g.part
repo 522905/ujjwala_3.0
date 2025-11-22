@@ -1,0 +1,154 @@
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
+class LocalApplicationAdapter extends TypeAdapter<LocalApplication> {
+  @override
+  final int typeId = 0;
+
+  @override
+  LocalApplication read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return LocalApplication(
+      localId: fields[0] as String,
+      localStatus: fields[1] as String,
+      applicantFullName: fields[2] as String?,
+      applicantFirstName: fields[3] as String?,
+      applicantMiddleName: fields[4] as String?,
+      applicantLastName: fields[5] as String?,
+      applicantGender: fields[6] as String?,
+      applicantDob: fields[7] as DateTime?,
+      applicantAadhaar: fields[8] as String?,
+      applicantMobile: fields[9] as String?,
+      applicantEmail: fields[10] as String?,
+      caste: fields[11] as String?,
+      maritalStatus: fields[12] as String?,
+      marriageDate: fields[13] as DateTime?,
+      bankAccountName: fields[20] as String?,
+      bankName: fields[21] as String?,
+      bankBranch: fields[22] as String?,
+      bankIfsc: fields[23] as String?,
+      bankAccountNumber: fields[24] as String?,
+      lpgConnectionType: fields[30] as String?,
+      latitude: fields[50] as String?,
+      longitude: fields[51] as String?,
+      accuracy: fields[52] as String?,
+      addressIds: (fields[60] as List).cast<String>(),
+      familyMemberIds: (fields[61] as List).cast<String>(),
+      documentIds: (fields[62] as List).cast<String>(),
+      aadhaarConsentSigned: fields[70] as bool,
+      agreesToDbtl: fields[71] as bool,
+      agreesPreInstallationCheck: fields[72] as bool,
+      agreesMandatoryInspections: fields[73] as bool,
+      declaresNoExistingConnection: fields[74] as bool,
+      declaresUseForDomesticCookingOnly: fields[75] as bool,
+      consentDataSharingOmcBank: fields[76] as bool,
+      createdAt: fields[80] as DateTime?,
+      updatedAt: fields[81] as DateTime?,
+      submittedApplicationNumber: fields[82] as String?,
+      submittedAt: fields[83] as DateTime?,
+      submissionErrorMessage: fields[84] as String?,
+      submissionRetryCount: fields[85] as int,
+      serverApplicationId: fields[86] as int?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, LocalApplication obj) {
+    writer
+      ..writeByte(40)
+      ..writeByte(0)
+      ..write(obj.localId)
+      ..writeByte(1)
+      ..write(obj.localStatus)
+      ..writeByte(2)
+      ..write(obj.applicantFullName)
+      ..writeByte(3)
+      ..write(obj.applicantFirstName)
+      ..writeByte(4)
+      ..write(obj.applicantMiddleName)
+      ..writeByte(5)
+      ..write(obj.applicantLastName)
+      ..writeByte(6)
+      ..write(obj.applicantGender)
+      ..writeByte(7)
+      ..write(obj.applicantDob)
+      ..writeByte(8)
+      ..write(obj.applicantAadhaar)
+      ..writeByte(9)
+      ..write(obj.applicantMobile)
+      ..writeByte(10)
+      ..write(obj.applicantEmail)
+      ..writeByte(11)
+      ..write(obj.caste)
+      ..writeByte(12)
+      ..write(obj.maritalStatus)
+      ..writeByte(13)
+      ..write(obj.marriageDate)
+      ..writeByte(20)
+      ..write(obj.bankAccountName)
+      ..writeByte(21)
+      ..write(obj.bankName)
+      ..writeByte(22)
+      ..write(obj.bankBranch)
+      ..writeByte(23)
+      ..write(obj.bankIfsc)
+      ..writeByte(24)
+      ..write(obj.bankAccountNumber)
+      ..writeByte(30)
+      ..write(obj.lpgConnectionType)
+      ..writeByte(50)
+      ..write(obj.latitude)
+      ..writeByte(51)
+      ..write(obj.longitude)
+      ..writeByte(52)
+      ..write(obj.accuracy)
+      ..writeByte(60)
+      ..write(obj.addressIds)
+      ..writeByte(61)
+      ..write(obj.familyMemberIds)
+      ..writeByte(62)
+      ..write(obj.documentIds)
+      ..writeByte(70)
+      ..write(obj.aadhaarConsentSigned)
+      ..writeByte(71)
+      ..write(obj.agreesToDbtl)
+      ..writeByte(72)
+      ..write(obj.agreesPreInstallationCheck)
+      ..writeByte(73)
+      ..write(obj.agreesMandatoryInspections)
+      ..writeByte(74)
+      ..write(obj.declaresNoExistingConnection)
+      ..writeByte(75)
+      ..write(obj.declaresUseForDomesticCookingOnly)
+      ..writeByte(76)
+      ..write(obj.consentDataSharingOmcBank)
+      ..writeByte(80)
+      ..write(obj.createdAt)
+      ..writeByte(81)
+      ..write(obj.updatedAt)
+      ..writeByte(82)
+      ..write(obj.submittedApplicationNumber)
+      ..writeByte(83)
+      ..write(obj.submittedAt)
+      ..writeByte(84)
+      ..write(obj.submissionErrorMessage)
+      ..writeByte(85)
+      ..write(obj.submissionRetryCount)
+      ..writeByte(86)
+      ..write(obj.serverApplicationId);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LocalApplicationAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

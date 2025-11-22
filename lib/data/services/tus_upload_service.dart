@@ -26,8 +26,8 @@ class TusUploadService {
 
       // Create TUS client
       final client = TusClient(
-        Uri.parse(ApiConfig.tusUploadUrl),
-        file,
+        url: Uri.parse(ApiConfig.tusUploadUrl),
+        file: file,
         store: TusMemoryStore(),
       );
 

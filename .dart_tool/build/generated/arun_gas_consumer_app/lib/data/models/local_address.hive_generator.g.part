@@ -1,0 +1,85 @@
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
+class LocalAddressAdapter extends TypeAdapter<LocalAddress> {
+  @override
+  final int typeId = 1;
+
+  @override
+  LocalAddress read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return LocalAddress(
+      localId: fields[0] as String,
+      applicationLocalId: fields[1] as String,
+      addressType: fields[2] as String,
+      houseFlatNo: fields[3] as String?,
+      floorNumber: fields[4] as String?,
+      buildingColony: fields[5] as String?,
+      streetRoad: fields[6] as String?,
+      villagePanchayatArea: fields[7] as String?,
+      blockSubDistrict: fields[8] as String?,
+      district: fields[9] as String?,
+      cityTown: fields[10] as String?,
+      state: fields[11] as String?,
+      pincode: fields[12] as String?,
+      landmark: fields[13] as String?,
+      poaCode: fields[14] as String?,
+      createdAt: fields[15] as DateTime?,
+      updatedAt: fields[16] as DateTime?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, LocalAddress obj) {
+    writer
+      ..writeByte(17)
+      ..writeByte(0)
+      ..write(obj.localId)
+      ..writeByte(1)
+      ..write(obj.applicationLocalId)
+      ..writeByte(2)
+      ..write(obj.addressType)
+      ..writeByte(3)
+      ..write(obj.houseFlatNo)
+      ..writeByte(4)
+      ..write(obj.floorNumber)
+      ..writeByte(5)
+      ..write(obj.buildingColony)
+      ..writeByte(6)
+      ..write(obj.streetRoad)
+      ..writeByte(7)
+      ..write(obj.villagePanchayatArea)
+      ..writeByte(8)
+      ..write(obj.blockSubDistrict)
+      ..writeByte(9)
+      ..write(obj.district)
+      ..writeByte(10)
+      ..write(obj.cityTown)
+      ..writeByte(11)
+      ..write(obj.state)
+      ..writeByte(12)
+      ..write(obj.pincode)
+      ..writeByte(13)
+      ..write(obj.landmark)
+      ..writeByte(14)
+      ..write(obj.poaCode)
+      ..writeByte(15)
+      ..write(obj.createdAt)
+      ..writeByte(16)
+      ..write(obj.updatedAt);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LocalAddressAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

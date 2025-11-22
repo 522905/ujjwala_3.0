@@ -1,0 +1,79 @@
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
+class LocalDocumentAdapter extends TypeAdapter<LocalDocument> {
+  @override
+  final int typeId = 3;
+
+  @override
+  LocalDocument read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return LocalDocument(
+      localId: fields[0] as String,
+      applicationLocalId: fields[1] as String,
+      docType: fields[2] as String,
+      originalFilePath: fields[3] as String?,
+      compressedFilePath: fields[4] as String?,
+      fileName: fields[5] as String?,
+      fileSizeOriginal: fields[6] as int?,
+      fileSizeCompressed: fields[7] as int?,
+      mimeType: fields[8] as String?,
+      description: fields[9] as String?,
+      capturedAt: fields[10] as DateTime?,
+      tusUrl: fields[11] as String?,
+      isUploaded: fields[12] as bool,
+      uploadedAt: fields[13] as DateTime?,
+      updatedAt: fields[14] as DateTime?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, LocalDocument obj) {
+    writer
+      ..writeByte(15)
+      ..writeByte(0)
+      ..write(obj.localId)
+      ..writeByte(1)
+      ..write(obj.applicationLocalId)
+      ..writeByte(2)
+      ..write(obj.docType)
+      ..writeByte(3)
+      ..write(obj.originalFilePath)
+      ..writeByte(4)
+      ..write(obj.compressedFilePath)
+      ..writeByte(5)
+      ..write(obj.fileName)
+      ..writeByte(6)
+      ..write(obj.fileSizeOriginal)
+      ..writeByte(7)
+      ..write(obj.fileSizeCompressed)
+      ..writeByte(8)
+      ..write(obj.mimeType)
+      ..writeByte(9)
+      ..write(obj.description)
+      ..writeByte(10)
+      ..write(obj.capturedAt)
+      ..writeByte(11)
+      ..write(obj.tusUrl)
+      ..writeByte(12)
+      ..write(obj.isUploaded)
+      ..writeByte(13)
+      ..write(obj.uploadedAt)
+      ..writeByte(14)
+      ..write(obj.updatedAt);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LocalDocumentAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'data/local/hive_service.dart';
+import 'data/services/api_service.dart';
+import 'data/services/tus_upload_service.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/application_repository.dart';
 import 'providers/auth_provider.dart';
@@ -36,12 +38,21 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Repositories (no need to be ChangeNotifierProvider)
-        Provider<AuthRepository>(
-          create: (_) => AuthRepository(),
+        // Services and Repositories
+        Provider(
+          create: (_) => ApiService(),
         ),
-        Provider<ApplicationRepository>(
-          create: (_) => ApplicationRepository(),
+        Provider(
+          create: (_) => TusUploadService(),
+        ),
+        Provider(
+          create: (context) => AuthRepository(context.read<ApiService>()),
+        ),
+        Provider(
+          create: (context) => ApplicationRepository(
+            context.read<ApiService>(),
+            context.read<TusUploadService>(),
+          ),
         ),
 
         // State Management Providers
@@ -125,7 +136,7 @@ class MyApp extends StatelessWidget {
               ),
 
               // Card Theme
-              cardTheme: CardTheme(
+              cardTheme: CardThemeData(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
