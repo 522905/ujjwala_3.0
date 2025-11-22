@@ -47,21 +47,25 @@ class _Step4PermanentAddressScreenState
 
     // Get current address state for validation
     final currentAddress = appProvider.currentAddress;
-    _currentAddressState = currentAddress?.state;
+    _currentAddressState = currentAddress?.state != null
+        ? IndianState.fromValue(currentAddress!.state!)
+        : null;
 
     // Load existing permanent address if any
     final permanentAddress = appProvider.permanentAddress;
     if (permanentAddress != null) {
       _existingAddressId = permanentAddress.localId;
-      _houseNumberController.text = permanentAddress.houseNumber ?? '';
-      _buildingController.text = permanentAddress.buildingName ?? '';
-      _streetController.text = permanentAddress.street ?? '';
-      _areaController.text = permanentAddress.area ?? '';
+      _houseNumberController.text = permanentAddress.houseFlatNo ?? '';
+      _buildingController.text = permanentAddress.buildingColony ?? '';
+      _streetController.text = permanentAddress.streetRoad ?? '';
+      _areaController.text = permanentAddress.villagePanchayatArea ?? '';
       _landmarkController.text = permanentAddress.landmark ?? '';
-      _cityController.text = permanentAddress.city ?? '';
+      _cityController.text = permanentAddress.cityTown ?? '';
       _districtController.text = permanentAddress.district ?? '';
       _pincodeController.text = permanentAddress.pincode ?? '';
-      _selectedState = permanentAddress.state;
+      _selectedState = permanentAddress.state != null
+          ? IndianState.fromValue(permanentAddress.state!)
+          : null;
     }
   }
 
@@ -88,12 +92,12 @@ class _Step4PermanentAddressScreenState
     }
 
     setState(() {
-      _houseNumberController.text = currentAddress.houseNumber ?? '';
-      _buildingController.text = currentAddress.buildingName ?? '';
-      _streetController.text = currentAddress.street ?? '';
-      _areaController.text = currentAddress.area ?? '';
+      _houseNumberController.text = currentAddress.houseFlatNo ?? '';
+      _buildingController.text = currentAddress.buildingColony ?? '';
+      _streetController.text = currentAddress.streetRoad ?? '';
+      _areaController.text = currentAddress.villagePanchayatArea ?? '';
       _landmarkController.text = currentAddress.landmark ?? '';
-      _cityController.text = currentAddress.city ?? '';
+      _cityController.text = currentAddress.cityTown ?? '';
       _districtController.text = currentAddress.district ?? '';
       _pincodeController.text = currentAddress.pincode ?? '';
       // Note: Don't copy state - it must be different!
@@ -121,7 +125,7 @@ class _Step4PermanentAddressScreenState
         _selectedState == _currentAddressState) {
       _showError(
         'Permanent address state must be DIFFERENT from current address state.\n'
-        'Current: ${_currentAddressState!.name.replaceAll('_', ' ')}\n'
+        'Current: ${_currentAddressState!.display}\n'
         'This is required for Migrant Household validation.',
       );
       return;
@@ -140,14 +144,14 @@ class _Step4PermanentAddressScreenState
       localId: _existingAddressId ?? const Uuid().v4(),
       applicationLocalId: app.localId,
       addressType: 'PERMANENT',
-      houseNumber: _houseNumberController.text.trim(),
-      buildingName: _buildingController.text.trim(),
-      street: _streetController.text.trim(),
-      area: _areaController.text.trim(),
+      houseFlatNo: _houseNumberController.text.trim(),
+      buildingColony: _buildingController.text.trim(),
+      streetRoad: _streetController.text.trim(),
+      villagePanchayatArea: _areaController.text.trim(),
       landmark: _landmarkController.text.trim(),
-      city: _cityController.text.trim(),
+      cityTown: _cityController.text.trim(),
       district: _districtController.text.trim(),
-      state: _selectedState,
+      state: _selectedState?.value,
       pincode: _pincodeController.text.trim(),
     );
 

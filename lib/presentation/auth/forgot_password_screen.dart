@@ -49,7 +49,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.forgotPasswordInitiate(
-      aadhaar: _aadhaarController.text.trim(),
+      _aadhaarController.text.trim(),
     );
 
     setState(() => _isLoading = false);
@@ -129,8 +129,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.forgotPasswordReset(
       aadhaar: _aadhaarController.text.trim(),
+      otp: _otpController.text.trim(),
       newPassword: _newPasswordController.text,
-      confirmPassword: _confirmPasswordController.text,
     );
 
     setState(() => _isLoading = false);

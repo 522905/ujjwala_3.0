@@ -45,15 +45,17 @@ class _Step3CurrentAddressScreenState extends State<Step3CurrentAddressScreen> {
 
     if (address != null) {
       _existingAddressId = address.localId;
-      _houseNumberController.text = address.houseNumber ?? '';
-      _buildingController.text = address.buildingName ?? '';
-      _streetController.text = address.street ?? '';
-      _areaController.text = address.area ?? '';
+      _houseNumberController.text = address.houseFlatNo ?? '';
+      _buildingController.text = address.buildingColony ?? '';
+      _streetController.text = address.streetRoad ?? '';
+      _areaController.text = address.villagePanchayatArea ?? '';
       _landmarkController.text = address.landmark ?? '';
-      _cityController.text = address.city ?? '';
+      _cityController.text = address.cityTown ?? '';
       _districtController.text = address.district ?? '';
       _pincodeController.text = address.pincode ?? '';
-      _selectedState = address.state;
+      _selectedState = address.state != null
+          ? IndianState.fromValue(address.state!)
+          : null;
     }
   }
 
@@ -91,14 +93,14 @@ class _Step3CurrentAddressScreenState extends State<Step3CurrentAddressScreen> {
       localId: _existingAddressId ?? const Uuid().v4(),
       applicationLocalId: app.localId,
       addressType: 'CURRENT',
-      houseNumber: _houseNumberController.text.trim(),
-      buildingName: _buildingController.text.trim(),
-      street: _streetController.text.trim(),
-      area: _areaController.text.trim(),
+      houseFlatNo: _houseNumberController.text.trim(),
+      buildingColony: _buildingController.text.trim(),
+      streetRoad: _streetController.text.trim(),
+      villagePanchayatArea: _areaController.text.trim(),
       landmark: _landmarkController.text.trim(),
-      city: _cityController.text.trim(),
+      cityTown: _cityController.text.trim(),
       district: _districtController.text.trim(),
-      state: _selectedState,
+      state: _selectedState?.value,
       pincode: _pincodeController.text.trim(),
     );
 

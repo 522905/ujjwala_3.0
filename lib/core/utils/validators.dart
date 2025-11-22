@@ -83,6 +83,9 @@ class Validators {
     return null;
   }
 
+  /// Validate IFSC code (alias for validateIFSC)
+  static String? validateIfsc(String? value) => validateIFSC(value);
+
   /// Validate bank account number (9-18 digits)
   static String? validateBankAccount(String? value) {
     if (value == null || value.trim().isEmpty) {

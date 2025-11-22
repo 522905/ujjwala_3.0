@@ -98,11 +98,15 @@ class _Step7ConsentsReviewScreenState extends State<Step7ConsentsReviewScreen> {
                               ),
                               _buildSummaryItem(
                                 'Gender',
-                                app.applicantGender?.name ?? 'N/A',
+                                app.applicantGender != null
+                                    ? Gender.fromValue(app.applicantGender!).display
+                                    : 'N/A',
                               ),
                               _buildSummaryItem(
                                 'Caste',
-                                app.caste?.name ?? 'N/A',
+                                app.caste != null
+                                    ? Caste.fromValue(app.caste!).display
+                                    : 'N/A',
                               ),
                             ],
                           ),

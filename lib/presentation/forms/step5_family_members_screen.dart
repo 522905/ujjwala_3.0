@@ -261,7 +261,7 @@ class _Step5FamilyMembersScreenState extends State<Step5FamilyMembersScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        member.fullName,
+                        member.fullName ?? 'N/A',
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
@@ -269,7 +269,9 @@ class _Step5FamilyMembersScreenState extends State<Step5FamilyMembersScreen> {
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        member.relationToApplicant.name,
+                        member.relationToApplicant != null
+                            ? RelationToApplicant.fromValue(member.relationToApplicant!).display
+                            : 'N/A',
                         style: TextStyle(
                           fontSize: 13.sp,
                           color: Colors.grey[600],
@@ -450,10 +452,14 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
   void initState() {
     super.initState();
     if (widget.member != null) {
-      _fullNameController.text = widget.member!.fullName;
-      _aadhaarController.text = widget.member!.aadhaarNumber;
-      _selectedRelation = widget.member!.relationToApplicant;
-      _selectedGender = widget.member!.gender;
+      _fullNameController.text = widget.member!.fullName ?? '';
+      _aadhaarController.text = widget.member!.aadhaarNumber ?? '';
+      _selectedRelation = widget.member!.relationToApplicant != null
+          ? RelationToApplicant.fromValue(widget.member!.relationToApplicant!)
+          : null;
+      _selectedGender = widget.member!.gender != null
+          ? Gender.fromValue(widget.member!.gender!)
+          : null;
       _selectedDob = widget.member!.dob;
     }
   }
@@ -509,8 +515,8 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
       applicationLocalId: app.localId,
       fullName: _fullNameController.text.trim(),
       aadhaarNumber: _aadhaarController.text.trim(),
-      relationToApplicant: _selectedRelation!,
-      gender: _selectedGender!,
+      relationToApplicant: _selectedRelation!.value,
+      gender: _selectedGender!.value,
       dob: _selectedDob!,
     );
 
