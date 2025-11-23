@@ -28,23 +28,15 @@ class TusUploadService {
       // Convert File to XFile for TusClient
       final xFile = XFile(file.path);
 
-      // Create TUS client with the new API
+      // Create TUS client with minimal required parameters
       final client = TusClient(
         url: ApiConfig.tusUploadUrl,
         file: xFile,
-        metadata: {
-          'filename': filename,
-          'filetype': _getMimeType(filename),
-        },
-        onProgress: onProgress != null
-            ? (count, total) {
-                if (total > 0) {
-                  final progress = count / total;
-                  onProgress(progress);
-                }
-              }
-            : null,
       );
+
+      // Note: tusc 2.1.0 doesn't support metadata or progress callbacks
+      // in the constructor. These features may need to be implemented
+      // differently or the package may need to be updated.
 
       // Start upload and get URL
       await client.start();
