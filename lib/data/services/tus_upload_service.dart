@@ -32,10 +32,6 @@ class TusUploadService {
       final client = TusClient(
         url: ApiConfig.tusUploadUrl,
         file: xFile,
-      );
-
-      // Upload file and get URL
-      final tusUrl = await client.upload(
         metadata: {
           'filename': filename,
           'filetype': _getMimeType(filename),
@@ -49,6 +45,11 @@ class TusUploadService {
               }
             : null,
       );
+
+      // Start upload and get URL
+      await client.start();
+
+      final tusUrl = client.uploadUrl;
 
       if (tusUrl == null || tusUrl.isEmpty) {
         throw Exception('TUS upload returned empty URL');
