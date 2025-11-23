@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../core/enums/app_enums.dart';
 import '../../providers/application_provider.dart';
 import '../../providers/submission_provider.dart';
 import '../submission/submission_progress_screen.dart';

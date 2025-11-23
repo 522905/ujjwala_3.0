@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:tusc/tusc.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:path/path.dart' as path;
 import '../../core/config/api_config.dart';
 
@@ -24,33 +25,30 @@ class TusUploadService {
         throw Exception('Invalid file or file exceeds size limit');
       }
 
-      // Create TUS client
+      // Convert File to XFile for TusClient
+      final xFile = XFile(file.path);
+
+      // Create TUS client with the new API
       final client = TusClient(
-        url: Uri.parse(ApiConfig.tusUploadUrl),
-        file: file,
+        url: ApiConfig.tusUploadUrl,
+        file: xFile,
       );
 
-      // Set metadata
-      client.metadata = {
-        'filename': filename,
-        'filetype': _getMimeType(filename),
-      };
-
-      // Set progress callback if provided
-      if (onProgress != null) {
-        client.progressCallback = (count, total) {
-          if (total > 0) {
-            final progress = count / total;
-            onProgress(progress);
-          }
-        };
-      }
-
-      // Upload file
-      await client.upload();
-
-      // Get the upload URL
-      final tusUrl = client.uploadUrl?.toString();
+      // Upload file and get URL
+      final tusUrl = await client.upload(
+        metadata: {
+          'filename': filename,
+          'filetype': _getMimeType(filename),
+        },
+        onProgress: onProgress != null
+            ? (count, total) {
+                if (total > 0) {
+                  final progress = count / total;
+                  onProgress(progress);
+                }
+              }
+            : null,
+      );
 
       if (tusUrl == null || tusUrl.isEmpty) {
         throw Exception('TUS upload returned empty URL');
