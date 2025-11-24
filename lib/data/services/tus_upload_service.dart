@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:tusc/tusc.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:path/path.dart' as path;
@@ -34,20 +35,37 @@ class TusUploadService {
         file: xFile,
       );
 
-      // Note: tusc 2.1.0 doesn't support metadata or progress callbacks
-      // in the constructor. These features may need to be implemented
-      // differently or the package may need to be updated.
+      // Use Completer to handle async upload with callbacks
+      final completer = Completer<String>();
 
-      // Start upload and get URL
-      await client.start();
+      // Start upload with callbacks
+      client.startUpload(
+        onProgress: (count, total, response) {
+          // Calculate progress percentage
+          if (total > 0) {
+            final progress = (count / total);
+            onProgress?.call(progress);
+          }
+        },
+        onComplete: (response) {
+          // Get the upload URL from the client
+          final tusUrl = client.uploadUrl;
 
-      final tusUrl = client.uploadUrl;
+          if (tusUrl == null || tusUrl.isEmpty) {
+            completer.completeError(Exception('TUS upload returned empty URL'));
+          } else {
+            completer.complete(tusUrl);
+          }
+        },
+        onError: (error) {
+          completer.completeError(Exception('TUS upload failed: $error'));
+        },
+        onTimeout: () {
+          completer.completeError(Exception('TUS upload timed out'));
+        },
+      );
 
-      if (tusUrl == null || tusUrl.isEmpty) {
-        throw Exception('TUS upload returned empty URL');
-      }
-
-      return tusUrl;
+      return await completer.future;
     } catch (e) {
       throw Exception('TUS upload failed: $e');
     }
