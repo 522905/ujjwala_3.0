@@ -78,6 +78,8 @@ class AgentAuthService {
     required String phoneNumber,
   }) async {
     try {
+      print('🔵 Submitting OTP for ref_id: $refId');
+
       final response = await _dio.post(
         ApiConfig.authAgentSubmitAadhaarOTPEndpoint,
         data: {
@@ -88,7 +90,17 @@ class AgentAuthService {
         },
       );
 
+      print('✅ OTP Verification Response Status: ${response.statusCode}');
+      print('📦 OTP Verification Response Data: ${response.data}');
+
+      // Check if response.data is null or not a Map
+      if (response.data == null) {
+        throw AgentKYCException('API returned null response');
+      }
+
       final kycResponse = AgentKYCResponse.fromJson(response.data);
+
+      print('🔍 Parsed KYC Response - Success: ${kycResponse.success}, KYC ID: ${kycResponse.kycId}, Name: ${kycResponse.name}');
 
       if (!kycResponse.success) {
         throw AgentKYCException(
@@ -98,6 +110,10 @@ class AgentAuthService {
 
       return kycResponse;
     } on DioException catch (e) {
+      print('❌ DioException during OTP verification: ${e.message}');
+      print('❌ Response Status: ${e.response?.statusCode}');
+      print('❌ Response Data: ${e.response?.data}');
+
       if (e.response?.statusCode == 409) {
         throw AgentKYCException(
           'Agent with this Aadhaar already exists',
@@ -109,7 +125,10 @@ class AgentAuthService {
           e.message ??
           'OTP verification failed';
       throw AgentKYCException(errorMessage, statusCode: e.response?.statusCode);
+    } on AgentKYCException {
+      rethrow;
     } catch (e) {
+      print('❌ Unexpected Error during OTP verification: ${e.toString()}');
       throw AgentKYCException('Unexpected error: ${e.toString()}');
     }
   }
