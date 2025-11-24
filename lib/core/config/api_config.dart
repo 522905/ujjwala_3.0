@@ -5,7 +5,7 @@
 
 class ApiConfig {
   // Environment Selection
-  static const Environment currentEnvironment = Environment.development;
+  static const Environment currentEnvironment = Environment.production;
 
   // Base URLs
   static String get baseUrl {
@@ -25,19 +25,20 @@ class ApiConfig {
   // Environment-specific URLs
   static const String developmentBaseUrl = 'https://dev.arungas.com';
   static const String stagingBaseUrl = 'https://staging.arungas.com';
-  static const String productionBaseUrl = 'https://api.arungas.com';
+  static const String productionBaseUrl = 'http://192.168.171.49:8000';
+  // static const String productionBaseUrl = 'https://dca.arungas.com';
 
-  // API Endpoints
-  static const String authLoginEndpoint = '/auth/login/';
-  static const String authSendOtpEndpoint = '/auth/send-otp/';
-  static const String authRefreshTokenEndpoint = '/auth/token/refresh/';
-  static const String authAgentSignupEndpoint = '/auth/agent/signup/';
-  static const String authAgentForgotPasswordEndpoint = '/auth/agent/forgot-password/';
-  static const String authAgentChangePasswordEndpoint = '/auth/agent/change-password/';
+  // API Endpoints (use static getters to access current environment's baseUrl)
+  static String get authLoginEndpoint => '${baseUrl}/auth/login/';
+  static String get authSendOtpEndpoint => '${baseUrl}/auth/send-otp/';
+  static String get authRefreshTokenEndpoint => '${baseUrl}/auth/token/refresh/';
+  static String get authAgentSignupEndpoint => '${baseUrl}/auth/agent/signup/';
+  static String get authAgentForgotPasswordEndpoint => '${baseUrl}/auth/agent/forgot-password/';
+  static String get authAgentChangePasswordEndpoint => '${baseUrl}/auth/agent/change-password/';
 
-  static const String applicationsEndpoint = '/api/ujjwala-v3/applications/';
-  static const String applicationsFormsEndpoint = '/api/ujjwala-v3/applications/{id}/forms/';
-  static const String applicationsSubmitFormsEndpoint = '/api/ujjwala-v3/applications/{id}/submit-forms/';
+  static String get applicationsEndpoint => '${baseUrl}/api/ujjwala-v3/applications/';
+  static String get applicationsFormsEndpoint => '${baseUrl}/api/ujjwala-v3/applications/{id}/forms/';
+  static String get applicationsSubmitFormsEndpoint => '${baseUrl}/api/ujjwala-v3/applications/{id}/submit-forms/';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 30);

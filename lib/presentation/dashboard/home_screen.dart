@@ -85,7 +85,7 @@ class HomeScreen extends StatelessWidget {
                       Row(
                         children: [
                           Icon(
-                            Icons.local_gas_station,
+                            Icons.propane_tank_sharp,
                             color: Colors.white,
                             size: 32.sp,
                           ),

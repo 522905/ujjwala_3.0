@@ -59,11 +59,11 @@ class _SplashScreenState extends State<SplashScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
+          content: Column(
             children: [
-              Icon(Icons.error, color: Colors.white),
-              SizedBox(width: 12.w),
+              SizedBox(width: 5.w),
               Text(authProvider.errorMessage ?? 'Failed to send OTP'),
+              SizedBox(width: 5.w),
             ],
           ),
           backgroundColor: Colors.red,
@@ -316,52 +316,31 @@ class _SplashScreenState extends State<SplashScreen> {
                     ),
                   ],
 
-                  SizedBox(height: 32.h),
+                  SizedBox(height: 10.h),
 
-                  // Not a customer button
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(vertical: 16.h),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(color: Colors.grey[300]!),
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AgentLoginScreen(),
+                        ),
+                      );
+                    },
+                    // icon: Icon(Icons.business_center, size: 18.sp),
+                    label: Text(
+                      'Not a customer',
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Not a customer?',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        TextButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const AgentLoginScreen(),
-                              ),
-                            );
-                          },
-                          icon: Icon(Icons.business_center, size: 18.sp),
-                          label: Text(
-                            'Login as Agent',
-                            style: TextStyle(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.blue[700],
-                          ),
-                        ),
-                      ],
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.blue[700],
                     ),
                   ),
 
-                  SizedBox(height: 24.h),
+                  // Not a customer button
+                  SizedBox(height: 20.h),
 
                   // Version
                   Text(

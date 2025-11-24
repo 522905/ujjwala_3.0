@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:tusc/tusc.dart';
 import 'package:cross_file/cross_file.dart';
@@ -28,26 +29,45 @@ class TusUploadService {
       // Convert File to XFile for TusClient
       final xFile = XFile(file.path);
 
-      // Create TUS client with minimal required parameters
+      // Create TUS client with named parameters (tusc 2.1.0 API)
       final client = TusClient(
         url: ApiConfig.tusUploadUrl,
         file: xFile,
+        metadata: {
+          'filename': filename,
+        },
       );
 
-      // Note: tusc 2.1.0 doesn't support metadata or progress callbacks
-      // in the constructor. These features may need to be implemented
-      // differently or the package may need to be updated.
+      // Completer to handle callback-based API
+      final completer = Completer<String>();
 
-      // Start upload and get URL
-      await client.start();
+      // Start upload with callbacks
+      // Note: startUpload doesn't return a Future that completes on upload finish
+      client.startUpload(
+        // onProgress receives: count (uploaded), total (file size), response
+        onProgress: (count, total, response) {
+          if (total > 0 && onProgress != null) {
+            onProgress(count / total);
+          }
+        },
+        // onComplete receives the http response, URL is in client.uploadUrl
+        onComplete: (response) {
+          final uploadUrl = client.uploadUrl?.toString();
+          if (uploadUrl != null && uploadUrl.isNotEmpty) {
+            completer.complete(uploadUrl);
+          } else {
+            completer.completeError(Exception('TUS upload returned empty URL'));
+          }
+        },
+        onTimeout: () {
+          completer.completeError(Exception('TUS upload timed out'));
+        },
+        onError: (error) {
+          completer.completeError(Exception('TUS upload error: ${error.message}'));
+        },
+      );
 
-      final tusUrl = client.uploadUrl;
-
-      if (tusUrl == null || tusUrl.isEmpty) {
-        throw Exception('TUS upload returned empty URL');
-      }
-
-      return tusUrl;
+      return await completer.future;
     } catch (e) {
       throw Exception('TUS upload failed: $e');
     }
