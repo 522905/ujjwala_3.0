@@ -36,6 +36,10 @@ class ApiConfig {
   static String get authAgentForgotPasswordEndpoint => '${baseUrl}/auth/agent/forgot-password/';
   static String get authAgentChangePasswordEndpoint => '${baseUrl}/auth/agent/change-password/';
 
+  // Agent Aadhaar KYC Endpoints (NEW)
+  static String get authAgentInitiateAadhaarEndpoint => '${baseUrl}/auth/agent/initiate-aadhaar/';
+  static String get authAgentSubmitAadhaarOTPEndpoint => '${baseUrl}/auth/agent/submit-aadhaar-otp/';
+
   static String get applicationsEndpoint => '${baseUrl}/api/ujjwala-v3/applications/';
   static String get applicationsFormsEndpoint => '${baseUrl}/api/ujjwala-v3/applications/{id}/forms/';
   static String get applicationsSubmitFormsEndpoint => '${baseUrl}/api/ujjwala-v3/applications/{id}/submit-forms/';

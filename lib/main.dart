@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
 import 'data/local/hive_service.dart';
 import 'data/services/api_service.dart';
 import 'data/services/tus_upload_service.dart';
+import 'data/services/agent_auth_service.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/application_repository.dart';
 import 'providers/auth_provider.dart';
 import 'providers/application_provider.dart';
 import 'providers/submission_provider.dart';
+import 'providers/agent_auth_provider.dart';
 import 'presentation/auth/splash_screen.dart';
+import 'core/config/api_config.dart';
 
 /// Main Entry Point
 ///
@@ -36,6 +40,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Create Dio instance for Agent Auth Service
+    final agentAuthDio = Dio(
+      BaseOptions(
+        baseUrl: ApiConfig.baseUrl,
+        connectTimeout: ApiConfig.connectTimeout,
+        receiveTimeout: ApiConfig.receiveTimeout,
+        sendTimeout: ApiConfig.sendTimeout,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
     return MultiProvider(
       providers: [
         // Services and Repositories
@@ -44,6 +62,9 @@ class MyApp extends StatelessWidget {
         ),
         Provider(
           create: (_) => TusUploadService(),
+        ),
+        Provider(
+          create: (_) => AgentAuthService(agentAuthDio),
         ),
         Provider(
           create: (context) => AuthRepository(context.read<ApiService>()),
@@ -67,6 +88,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<SubmissionProvider>(
           create: (context) => SubmissionProvider(
             context.read<ApplicationRepository>(),
+          ),
+        ),
+        ChangeNotifierProvider<AgentAuthProvider>(
+          create: (context) => AgentAuthProvider(
+            context.read<AgentAuthService>(),
           ),
         ),
       ],
