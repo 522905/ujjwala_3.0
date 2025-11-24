@@ -51,24 +51,26 @@ class AgentKYCReviewScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 16.h),
 
-                Text(
-                  'Name: $name',
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w600,
+                if (name.isNotEmpty && name != 'Agent')
+                  Text(
+                    'Name: $name',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 8.h),
+                if (name.isNotEmpty && name != 'Agent') SizedBox(height: 8.h),
 
-                Text(
-                  'KYC ID: #$kycId',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    color: Colors.grey[600],
+                if (kycId > 0)
+                  Text(
+                    'KYC ID: #$kycId',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
                 SizedBox(height: 32.h),
 
                 // Status Card

@@ -63,11 +63,13 @@ class AgentAuthProvider extends ChangeNotifier {
     required String phoneNumber,
   }) async {
     if (_otpResponse == null) {
+      print('❌ [Provider] OTP Response is null, cannot verify');
       _errorMessage = 'Please generate OTP first';
       notifyListeners();
       return false;
     }
 
+    print('🟢 [Provider] Starting OTP verification with ref_id: ${_otpResponse!.refId}');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -80,15 +82,22 @@ class AgentAuthProvider extends ChangeNotifier {
         phoneNumber: phoneNumber,
       );
 
+      print('✅ [Provider] KYC Response received');
+      print('📦 [Provider] KYC ID: ${_kycResponse?.kycId}');
+      print('📦 [Provider] Name: ${_kycResponse?.name}');
+      print('📦 [Provider] Message: ${_kycResponse?.message}');
+
       _isLoading = false;
       notifyListeners();
       return true;
     } on AgentKYCException catch (e) {
+      print('❌ [Provider] AgentKYCException during OTP verification: ${e.message}');
       _errorMessage = e.message;
       _isLoading = false;
       notifyListeners();
       return false;
     } catch (e) {
+      print('❌ [Provider] Unexpected error during OTP verification: ${e.toString()}');
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();

@@ -46,6 +46,8 @@ class _AgentOTPScreenState extends State<AgentOTPScreen> {
 
     final authProvider = Provider.of<AgentAuthProvider>(context, listen: false);
 
+    print('🔵 [OTP Screen] Verifying OTP: ${_otpController.text}');
+
     final success = await authProvider.verifyOTP(
       otp: _otpController.text,
       aadhaarNumber: widget.aadhaarNumber,
@@ -54,20 +56,42 @@ class _AgentOTPScreenState extends State<AgentOTPScreen> {
 
     if (!mounted) return;
 
+    print('✅ [OTP Screen] Verification success: $success');
+    print('📦 [OTP Screen] KYC Response: ${authProvider.kycResponse}');
+
     if (success) {
-      // Navigate to success screen
+      // Check if we have all required data
+      final kycResponse = authProvider.kycResponse;
+
+      if (kycResponse == null) {
+        print('❌ [OTP Screen] KYC Response is null');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verification successful but response data is missing'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      print('🔍 [OTP Screen] KYC ID: ${kycResponse.kycId}, Name: ${kycResponse.name}');
+
+      // Navigate to success screen with safe defaults
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => AgentKYCReviewScreen(
-            kycId: authProvider.kycResponse!.kycId!,
-            name: authProvider.kycResponse!.name!,
-            message: authProvider.kycResponse!.message,
+            kycId: kycResponse.kycId ?? 0,
+            name: kycResponse.name ?? 'Agent',
+            message: kycResponse.message,
           ),
         ),
       );
     } else {
       // Show error
+      print('❌ [OTP Screen] Verification failed: ${authProvider.errorMessage}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.errorMessage ?? 'OTP verification failed'),
