@@ -1,21 +1,109 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'user_login_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../core/utils/validators.dart';
+import '../dashboard/main_container.dart';
 import 'agent_login_screen.dart';
-import 'agent_signup_screen.dart';
-import 'customer_signup_screen.dart';
-import 'forgot_password_screen.dart';
 
-/// Splash Screen
+/// Splash Screen - Customer Login
 ///
-/// Entry point of the app with options:
-/// 1. Login as Agent
-/// 2. Login as Customer
-/// 3. Sign Up
-/// 4. Forgot Password
+/// Entry point showing customer login with option to switch to agent login
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _mobileController = TextEditingController();
+  final _otpController = TextEditingController();
+
+  bool _otpSent = false;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _mobileController.dispose();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendOtp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.sendOtp(_mobileController.text.trim());
+
+    setState(() => _isLoading = false);
+
+    if (success) {
+      setState(() => _otpSent = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12.w),
+              Text('OTP sent successfully'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 12.w),
+              Text(authProvider.errorMessage ?? 'Failed to send OTP'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.loginWithOtp(
+      mobile: _mobileController.text.trim(),
+      otp: _otpController.text.trim(),
+    );
+
+    setState(() => _isLoading = false);
+
+    if (success) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainContainer()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 12.w),
+              Text(authProvider.errorMessage ?? 'Login failed'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,304 +112,269 @@ class SplashScreen extends StatelessWidget {
         child: Center(
           child: SingleChildScrollView(
             padding: EdgeInsets.all(24.w),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // App Logo with cylinder icon
-                Container(
-                  width: 200.w,
-                  height: 200.h,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue[700]!, Colors.blue[500]!],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // App Logo with gradient
+                  Container(
+                    width: 150.w,
+                    height: 150.h,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue[700]!, Colors.blue[500]!],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(75.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(20.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
+                    child: Icon(
+                      Icons.propane_tank,
+                      size: 80.sp,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 32.h),
+
+                  // App Name
+                  Text(
+                    'Arun Gas Services',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 28.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[900],
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+
+                  // Subtitle
+                  Text(
+                    'Ujjwala 3.0',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 40.h),
+
+                  // Customer Login Section
+                  Row(
+                    children: [
+                      Icon(Icons.account_circle, color: Colors.blue[700], size: 24.sp),
+                      SizedBox(width: 8.w),
+                      Text(
+                        'Customer Login',
+                        style: TextStyle(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[900],
+                        ),
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.propane_tank,
-                    size: 100.sp,
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(height: 24.h),
+                  SizedBox(height: 24.h),
 
-                // App Name
-                Text(
-                  'Arun Gas Services',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue[900],
-                  ),
-                ),
-                SizedBox(height: 8.h),
-
-                // Subtitle
-                Text(
-                  'Ujjwala 3.0',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 48.h),
-
-                // Login Section
-                Text(
-                  'Login',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[700],
-                  ),
-                ),
-                SizedBox(height: 16.h),
-
-                // Login with Agent Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56.h,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const AgentLoginScreen(),
-                        ),
-                      );
-                    },
-                    icon: Icon(Icons.business_center, size: 20.sp),
-                    label: Text(
-                      'Login with Agent',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[700],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
+                  // Mobile Number Field
+                  TextFormField(
+                    controller: _mobileController,
+                    decoration: InputDecoration(
+                      labelText: 'Mobile Number',
+                      prefixIcon: Icon(Icons.phone_android, color: Colors.blue[700]),
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
                       ),
-                      elevation: 2,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 12.h),
-
-                // Login with Customer Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56.h,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const UserLoginScreen(),
-                        ),
-                      );
-                    },
-                    icon: Icon(Icons.person, size: 20.sp),
-                    label: Text(
-                      'Login with Customer',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[600],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
+                      enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
                       ),
-                      elevation: 2,
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: BorderSide(color: Colors.blue[700]!, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
+                    keyboardType: TextInputType.phone,
+                    maxLength: 10,
+                    enabled: !_otpSent,
+                    validator: Validators.validateMobile,
                   ),
-                ),
-                SizedBox(height: 32.h),
+                  SizedBox(height: 16.h),
 
-                // Sign Up Section
-                Row(
-                  children: [
-                    Expanded(
-                      child: Divider(color: Colors.grey[400], thickness: 1),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      child: Text(
-                        'New User?',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: Colors.grey[600],
+                  // Send OTP Button
+                  if (!_otpSent)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56.h,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _sendOtp,
+                        icon: Icon(Icons.sms, size: 20.sp),
+                        label: Text(
+                          'Send OTP',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          elevation: 2,
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: Divider(color: Colors.grey[400], thickness: 1),
+
+                  // OTP Field and Login
+                  if (_otpSent) ...[
+                    TextFormField(
+                      controller: _otpController,
+                      decoration: InputDecoration(
+                        labelText: 'Enter OTP',
+                        prefixIcon: Icon(Icons.vpn_key, color: Colors.blue[700]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: BorderSide(color: Colors.blue[700]!, width: 2),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      validator: Validators.validateOTP,
+                    ),
+                    SizedBox(height: 16.h),
+
+                    // Verify & Login Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56.h,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _login,
+                        icon: _isLoading
+                            ? SizedBox(
+                                width: 20.w,
+                                height: 20.h,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Icon(Icons.login, size: 20.sp),
+                        label: Text(
+                          _isLoading ? 'Verifying...' : 'Verify & Login',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[600],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          elevation: 2,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+
+                    // Change Mobile Number
+                    TextButton.icon(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              setState(() => _otpSent = false);
+                              _otpController.clear();
+                            },
+                      icon: Icon(Icons.edit, size: 18.sp),
+                      label: Text(
+                        'Change Mobile Number',
+                        style: TextStyle(fontSize: 14.sp),
+                      ),
                     ),
                   ],
-                ),
-                SizedBox(height: 16.h),
 
-                // Sign Up Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56.h,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      _showSignupOptions(context);
-                    },
-                    icon: Icon(Icons.person_add, size: 20.sp),
-                    label: Text(
-                      'Sign Up',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  SizedBox(height: 32.h),
+
+                  // Not a customer button
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(vertical: 16.h),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(color: Colors.grey[300]!),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blue[700],
-                      side: BorderSide(color: Colors.blue[700]!, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Not a customer?',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const AgentLoginScreen(),
+                              ),
+                            );
+                          },
+                          icon: Icon(Icons.business_center, size: 18.sp),
+                          label: Text(
+                            'Login as Agent',
+                            style: TextStyle(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blue[700],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                SizedBox(height: 24.h),
 
-                // Forgot Password Link
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ForgotPasswordScreen(),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'Forgot Password?',
+                  SizedBox(height: 24.h),
+
+                  // Version
+                  Text(
+                    'v1.0.0',
                     style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.grey[700],
+                      fontSize: 12.sp,
+                      color: Colors.grey[400],
                     ),
                   ),
-                ),
-                SizedBox(height: 40.h),
-
-                // Version
-                Text(
-                  'v1.0.0',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  void _showSignupOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.all(24.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Sign Up As',
-              style: TextStyle(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 24.h),
-
-            // Sign Up as Customer
-            SizedBox(
-              width: double.infinity,
-              height: 56.h,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const CustomerSignupScreen(),
-                    ),
-                  );
-                },
-                icon: Icon(Icons.person, size: 20.sp),
-                label: Text(
-                  'Customer',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[600],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 12.h),
-
-            // Sign Up as Agent
-            SizedBox(
-              width: double.infinity,
-              height: 56.h,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const AgentSignupScreen(),
-                    ),
-                  );
-                },
-                icon: Icon(Icons.business_center, size: 20.sp),
-                label: Text(
-                  'Agent',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[700],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 16.h),
-          ],
         ),
       ),
     );
