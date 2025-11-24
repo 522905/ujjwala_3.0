@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/agent_auth_provider.dart';
 import '../../core/utils/aadhaar_validator.dart';
 import '../../core/utils/validators.dart';
+import 'agent_otp_screen.dart';
 
 /// Agent Signup Screen
 ///
-/// Agent registration with Aadhaar verification and KYC
+/// Agent registration with Aadhaar OTP verification
+/// Step 1: Enter Aadhaar and Phone Number to generate OTP
 
 class AgentSignupScreen extends StatefulWidget {
   const AgentSignupScreen({super.key});
@@ -19,12 +22,9 @@ class AgentSignupScreen extends StatefulWidget {
 class _AgentSignupScreenState extends State<AgentSignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _aadhaarController = TextEditingController();
-  final _mobileController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _addressController = TextEditingController();
+  final _phoneController = TextEditingController();
 
   bool? _aadhaarValidationState;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -35,9 +35,7 @@ class _AgentSignupScreenState extends State<AgentSignupScreen> {
   @override
   void dispose() {
     _aadhaarController.dispose();
-    _mobileController.dispose();
-    _nameController.dispose();
-    _addressController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -63,101 +61,40 @@ class _AgentSignupScreenState extends State<AgentSignupScreen> {
     return _aadhaarValidationState! ? Colors.green : Colors.orange;
   }
 
-  Future<void> _submitSignup() async {
+  Future<void> _generateOTP() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    final authProvider = Provider.of<AgentAuthProvider>(context, listen: false);
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final response = await authProvider.agentSignup(
+    final success = await authProvider.generateOTP(
       aadhaarNumber: _aadhaarController.text.trim(),
-      mobile: _mobileController.text.trim(),
-      name: _nameController.text.trim(),
-      address: _addressController.text.trim(),
+      phoneNumber: '+91${_phoneController.text.trim()}',
     );
 
-    setState(() => _isLoading = false);
+    if (!mounted) return;
 
-    if (response != null) {
-      _showSuccessDialog(response);
+    if (success) {
+      // Navigate to OTP screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AgentOTPScreen(
+            aadhaarNumber: _aadhaarController.text.trim(),
+            phoneNumber: '+91${_phoneController.text.trim()}',
+          ),
+        ),
+      );
     } else {
+      // Show error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Signup failed'),
+          content: Text(authProvider.errorMessage ?? 'Failed to generate OTP'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
-  }
-
-  void _showSuccessDialog(Map<String, dynamic> response) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 30.sp),
-            SizedBox(width: 12.w),
-            const Text('KYC Submitted'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Your KYC has been submitted successfully!',
-              style: TextStyle(fontSize: 14.sp),
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              'Your application is under review. You will receive your Agent ID and temporary password via SMS once approved.',
-              style: TextStyle(fontSize: 12.sp, color: Colors.grey[700]),
-            ),
-            SizedBox(height: 16.h),
-            Container(
-              padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'KYC ID: ${response['kyc_id']}',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[900],
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    'Please save this for reference',
-                    style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Go back to splash
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue[700],
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -174,35 +111,42 @@ class _AgentSignupScreenState extends State<AgentSignupScreen> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Header
                 Icon(
-                  Icons.business_center,
+                  Icons.verified_user,
                   size: 80.sp,
                   color: Colors.blue[700],
                 ),
-                SizedBox(height: 16.h),
+                SizedBox(height: 24.h),
 
                 Text(
-                  'Register as Agent',
+                  'Aadhaar OTP Verification',
                   style: TextStyle(
                     fontSize: 24.sp,
                     fontWeight: FontWeight.bold,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 8.h),
 
                 Text(
-                  'Submit your KYC details for verification',
-                  style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+                  'Your data will be automatically verified from UIDAI. No manual entry required.',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 32.h),
 
-                // Aadhaar Number with validation
+                // Aadhaar Number Input with validation
                 TextFormField(
                   controller: _aadhaarController,
                   decoration: InputDecoration(
                     labelText: 'Aadhaar Number',
+                    hintText: 'Enter 12-digit Aadhaar number',
                     prefixIcon: const Icon(Icons.credit_card),
                     suffixIcon: _buildAadhaarValidationIcon(),
                     border: OutlineInputBorder(
@@ -218,16 +162,27 @@ class _AgentSignupScreenState extends State<AgentSignupScreen> {
                   ),
                   keyboardType: TextInputType.number,
                   maxLength: 12,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   validator: Validators.validateAadhaar,
                 ),
                 SizedBox(height: 16.h),
 
-                // Mobile Number
+                // Phone Number Input
                 TextFormField(
-                  controller: _mobileController,
+                  controller: _phoneController,
                   decoration: InputDecoration(
-                    labelText: 'Mobile Number',
+                    labelText: 'Phone Number',
+                    hintText: 'Enter 10-digit mobile number',
                     prefixIcon: const Icon(Icons.phone),
+                    prefix: Text(
+                      '+91 ',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 16.sp,
+                      ),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.r),
                     ),
@@ -236,60 +191,78 @@ class _AgentSignupScreenState extends State<AgentSignupScreen> {
                   ),
                   keyboardType: TextInputType.phone,
                   maxLength: 10,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   validator: Validators.validateMobile,
                 ),
-                SizedBox(height: 16.h),
+                SizedBox(height: 24.h),
 
-                // Full Name
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: const Icon(Icons.person),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[50],
-                  ),
-                  validator: (value) => Validators.validateName(value, 'Name'),
-                ),
-                SizedBox(height: 16.h),
-
-                // Address
-                TextFormField(
-                  controller: _addressController,
-                  decoration: InputDecoration(
-                    labelText: 'Address',
-                    prefixIcon: const Icon(Icons.location_on),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[50],
-                  ),
-                  maxLines: 3,
-                  validator: (value) =>
-                      Validators.validateRequired(value, 'Address'),
-                ),
-                SizedBox(height: 32.h),
-
-                // Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56.h,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submitSignup,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[700],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
+                // Generate OTP Button
+                Consumer<AgentAuthProvider>(
+                  builder: (context, authProvider, child) {
+                    return SizedBox(
+                      height: 56.h,
+                      child: ElevatedButton(
+                        onPressed: authProvider.isLoading ? null : _generateOTP,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child: authProvider.isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Generate OTP',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
+                    );
+                  },
+                ),
+
+                SizedBox(height: 16.h),
+
+                // Info Text
+                Container(
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(
+                      color: Colors.blue[200]!,
                     ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Submit KYC'),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.blue[700],
+                        size: 20.sp,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          'OTP will be sent to your Aadhaar-linked mobile number',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.blue[900],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
