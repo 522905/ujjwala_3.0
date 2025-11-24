@@ -26,6 +26,7 @@ class AgentAuthProvider extends ChangeNotifier {
     required String aadhaarNumber,
     required String phoneNumber,
   }) async {
+    print('🟢 [Provider] Starting OTP generation');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -36,15 +37,18 @@ class AgentAuthProvider extends ChangeNotifier {
         phoneNumber: phoneNumber,
       );
 
+      print('✅ [Provider] OTP Response received: ${_otpResponse?.refId}');
       _isLoading = false;
       notifyListeners();
       return true;
     } on AgentKYCException catch (e) {
+      print('❌ [Provider] AgentKYCException: ${e.message}');
       _errorMessage = e.message;
       _isLoading = false;
       notifyListeners();
       return false;
     } catch (e) {
+      print('❌ [Provider] Unexpected error: ${e.toString()}');
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();

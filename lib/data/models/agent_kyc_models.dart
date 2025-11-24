@@ -53,12 +53,22 @@ class AadhaarOTPResponse {
   });
 
   factory AadhaarOTPResponse.fromJson(Map<String, dynamic> json) {
+    // If we have a ref_id, consider it successful even if success field is missing
+    final hasRefId = json['ref_id'] != null && json['ref_id'].toString().isNotEmpty;
+    final explicitSuccess = json['success'];
+
+    // Determine success: explicit true OR (no explicit false AND has ref_id)
+    final isSuccessful = explicitSuccess == true ||
+                        (explicitSuccess != false && hasRefId);
+
+    print('🔍 [Model] Parsing response: success=$explicitSuccess, ref_id=${json['ref_id']}, determined=$isSuccessful');
+
     return AadhaarOTPResponse(
-      success: json['success'] ?? false,
-      refId: json['ref_id'] ?? '',
-      message: json['message'] ?? '',
-      maskedNumber: json['if_number'],
-      error: json['error'],
+      success: isSuccessful,
+      refId: json['ref_id']?.toString() ?? '',
+      message: json['message']?.toString() ?? '',
+      maskedNumber: json['if_number']?.toString(),
+      error: json['error']?.toString(),
     );
   }
 
@@ -90,12 +100,22 @@ class AgentKYCResponse {
   });
 
   factory AgentKYCResponse.fromJson(Map<String, dynamic> json) {
+    // If we have a kyc_id, consider it successful even if success field is missing
+    final hasKycId = json['kyc_id'] != null;
+    final explicitSuccess = json['success'];
+
+    // Determine success: explicit true OR (no explicit false AND has kyc_id)
+    final isSuccessful = explicitSuccess == true ||
+                        (explicitSuccess != false && hasKycId);
+
+    print('🔍 [Model] Parsing KYC response: success=$explicitSuccess, kyc_id=${json['kyc_id']}, determined=$isSuccessful');
+
     return AgentKYCResponse(
-      success: json['success'] ?? false,
+      success: isSuccessful,
       kycId: json['kyc_id'],
-      name: json['name'],
-      message: json['message'] ?? '',
-      error: json['error'],
+      name: json['name']?.toString(),
+      message: json['message']?.toString() ?? '',
+      error: json['error']?.toString(),
     );
   }
 

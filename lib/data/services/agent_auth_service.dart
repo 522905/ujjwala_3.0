@@ -17,6 +17,8 @@ class AgentAuthService {
     required String phoneNumber,
   }) async {
     try {
+      print('🔵 Initiating Aadhaar verification for: ${aadhaarNumber.substring(0, 4)}****');
+
       final response = await _dio.post(
         ApiConfig.authAgentInitiateAadhaarEndpoint,
         data: {
@@ -25,7 +27,17 @@ class AgentAuthService {
         },
       );
 
+      print('✅ API Response Status: ${response.statusCode}');
+      print('📦 API Response Data: ${response.data}');
+
+      // Check if response.data is null or not a Map
+      if (response.data == null) {
+        throw AgentKYCException('API returned null response');
+      }
+
       final otpResponse = AadhaarOTPResponse.fromJson(response.data);
+
+      print('🔍 Parsed OTP Response - Success: ${otpResponse.success}, RefId: ${otpResponse.refId}');
 
       if (!otpResponse.success) {
         throw AgentKYCException(
@@ -35,6 +47,10 @@ class AgentAuthService {
 
       return otpResponse;
     } on DioException catch (e) {
+      print('❌ DioException: ${e.message}');
+      print('❌ Response Status: ${e.response?.statusCode}');
+      print('❌ Response Data: ${e.response?.data}');
+
       if (e.response?.statusCode == 409) {
         throw AgentKYCException(
           'Agent with this Aadhaar already exists',
@@ -46,7 +62,10 @@ class AgentAuthService {
           e.message ??
           'Failed to initiate verification';
       throw AgentKYCException(errorMessage, statusCode: e.response?.statusCode);
+    } on AgentKYCException {
+      rethrow;
     } catch (e) {
+      print('❌ Unexpected Error: ${e.toString()}');
       throw AgentKYCException('Unexpected error: ${e.toString()}');
     }
   }
