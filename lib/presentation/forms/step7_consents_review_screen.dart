@@ -275,6 +275,10 @@ class _Step7ConsentsReviewScreenState extends State<Step7ConsentsReviewScreen> {
                                     )
                                   ]
                                 : appProvider.documents.map((doc) {
+                                    // Convert String docType to DocumentType enum
+                                    final docTypeDisplay = doc.docType != null
+                                        ? DocumentType.fromValue(doc.docType!).display
+                                        : 'Document';
                                     return Padding(
                                       padding: EdgeInsets.only(bottom: 8.h),
                                       child: Row(
@@ -287,7 +291,7 @@ class _Step7ConsentsReviewScreenState extends State<Step7ConsentsReviewScreen> {
                                           SizedBox(width: 8.w),
                                           Expanded(
                                             child: Text(
-                                              doc.docType?.display ?? 'Document',
+                                              docTypeDisplay,
                                               style: TextStyle(fontSize: 13.sp),
                                             ),
                                           ),

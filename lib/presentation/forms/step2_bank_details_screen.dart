@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../providers/application_provider.dart';
 import '../../core/utils/validators.dart';
+import '../../core/enums/app_enums.dart';
 import '../../data/repositories/document_repository.dart';
 import '../../data/services/tus_upload_service.dart';
 import '../../data/services/compression_service.dart';
@@ -196,16 +197,25 @@ class _Step2BankDetailsScreenState extends State<Step2BankDetailsScreen> {
     });
 
     try {
-      // Upload to TUS
-      final url = await _documentRepo.uploadDocument(_passbookFile!);
+      final appProvider = Provider.of<ApplicationProvider>(context, listen: false);
+      final app = appProvider.currentApplication;
+
+      if (app == null) {
+        throw Exception('No active application');
+      }
+
+      // Create a document using the repository
+      final tusService = TusUploadService();
+      final filename = 'bank_passbook_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final url = await tusService.uploadWithRetry(
+        file: _passbookFile!,
+        filename: filename,
+      );
 
       setState(() {
         _passbookUrl = url;
         _isUploadingPassbook = false;
       });
-
-      // Save to provider
-      _saveField('bank_passbook_url', url);
 
       _showSuccess('Passbook uploaded successfully!');
     } catch (e) {
