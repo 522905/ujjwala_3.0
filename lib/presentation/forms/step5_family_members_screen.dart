@@ -563,7 +563,7 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
         final frontDoc = documents.firstWhere(
           (d) => d.docType == DocumentType.aadhaarFront,
         );
-        aadhaarFrontUrl = frontDoc.serverUrl;
+        aadhaarFrontUrl = frontDoc.tusUrl;
       } catch (e) {
         // Document not found
       }
@@ -572,7 +572,7 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
         final backDoc = documents.firstWhere(
           (d) => d.docType == DocumentType.aadhaarBack,
         );
-        aadhaarBackUrl = backDoc.serverUrl;
+        aadhaarBackUrl = backDoc.tusUrl;
       } catch (e) {
         // Document not found
       }
