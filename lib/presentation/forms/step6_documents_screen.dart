@@ -77,7 +77,7 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
     ];
 
     // Conditional: Caste Certificate (only if caste is not General)
-    final caste = app?.applicantCaste;
+    final caste = app?.caste;
     if (caste != null && caste != 'GENERAL' && caste.toLowerCase() != 'general') {
       docs.add({
         'type': DocumentType.casteCertificate,
@@ -89,20 +89,22 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
     }
 
     // Conditional: Migration Certificate (only if states are different)
-    final currentState = currentAddress?.state;
-    final permanentState = permanentAddress?.state;
-    if (currentState != null &&
-        permanentState != null &&
-        currentState != permanentState) {
-      docs.add({
-        'type': DocumentType.migrationCertificate,
-        'title': 'Migration Certificate',
-        'description':
-            'Required as permanent state differs from current state',
-        'mandatory': true,
-        'conditional': true,
-      });
-    }
+    // NOTE: DocumentType.migrationCertificate doesn't exist in the enum yet.
+    // Commenting out until the enum is updated.
+    // final currentState = currentAddress?.state;
+    // final permanentState = permanentAddress?.state;
+    // if (currentState != null &&
+    //     permanentState != null &&
+    //     currentState != permanentState) {
+    //   docs.add({
+    //     'type': DocumentType.migrationCertificate,
+    //     'title': 'Migration Certificate',
+    //     'description':
+    //         'Required as permanent state differs from current state',
+    //     'mandatory': true,
+    //     'conditional': true,
+    //   });
+    // }
 
     return docs;
   }
@@ -187,7 +189,7 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
 
   bool _isDocumentUploaded(
       List<dynamic> documents, DocumentType docType) {
-    return documents.any((doc) => doc.docType == docType && doc.isUploaded);
+    return documents.any((doc) => doc.docType == docType.value && doc.isUploaded);
   }
 
   void _proceedToNextStep() {
