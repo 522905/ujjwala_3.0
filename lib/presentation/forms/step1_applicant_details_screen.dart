@@ -312,13 +312,12 @@ class _Step1ApplicantDetailsScreenState
 
   Future<String?> _uploadToTUS(File file) async {
     try {
-      // TODO: Implement TUS upload
-      // For now, using DocumentRepository if available
-      final docRepo = DocumentRepository(
-        TusUploadService(),
-        CompressionService(),
+      final tusService = TusUploadService();
+      final filename = 'aadhaar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      return await tusService.uploadWithRetry(
+        file: file,
+        filename: filename,
       );
-      return await docRepo.uploadFile(file);
     } catch (e) {
       debugPrint('Upload error: $e');
       return null;
