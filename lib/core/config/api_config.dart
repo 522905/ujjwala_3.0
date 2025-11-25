@@ -44,6 +44,12 @@ class ApiConfig {
   static String get applicationsFormsEndpoint => '${baseUrl}/api/ujjwala-v3/applications/{id}/forms/';
   static String get applicationsSubmitFormsEndpoint => '${baseUrl}/api/ujjwala-v3/applications/{id}/submit-forms/';
 
+  // OCR and Utility Endpoints
+  static String get aadhaarOcrEndpoint => '${baseUrl}/app_utilities/application-utilities/get_details_for_aadhar/';
+  static String get verifyOtpEndpoint => '${baseUrl}/communication_log/verify-otp-generic/';
+  static String get sendOtpEndpoint => '${baseUrl}/communication_log/send-otp-generic/';
+
+
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
