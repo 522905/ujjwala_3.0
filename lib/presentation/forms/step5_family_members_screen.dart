@@ -557,9 +557,25 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
     String? aadhaarBackUrl;
 
     if (_isSelfMember) {
-      // Get Aadhaar URLs from Step 1
-      aadhaarFrontUrl = app.getField('aadhaar_front_url');
-      aadhaarBackUrl = app.getField('aadhaar_back_url');
+      // Get Aadhaar URLs from Step 1 documents
+      final documents = appProvider.documents;
+      try {
+        final frontDoc = documents.firstWhere(
+          (d) => d.docType == DocumentType.aadhaarFront,
+        );
+        aadhaarFrontUrl = frontDoc.serverUrl;
+      } catch (e) {
+        // Document not found
+      }
+
+      try {
+        final backDoc = documents.firstWhere(
+          (d) => d.docType == DocumentType.aadhaarBack,
+        );
+        aadhaarBackUrl = backDoc.serverUrl;
+      } catch (e) {
+        // Document not found
+      }
     }
 
     final member = LocalFamilyMember(
