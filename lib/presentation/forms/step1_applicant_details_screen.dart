@@ -313,8 +313,6 @@ class _Step1ApplicantDetailsScreenState
       await appProvider.addDocument(backDoc);
     }
   }
-    );
-  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
