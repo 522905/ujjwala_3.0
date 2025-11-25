@@ -88,9 +88,30 @@ class _Step1ApplicantDetailsScreenState
           ? Caste.fromValue(app.caste!)
           : null;
 
-      // Load existing Aadhaar URLs if available
-      _aadhaarFrontUrl = app.uidFrontLink;
-      _aadhaarBackUrl = app.uidBackLink;
+      // Load existing Aadhaar URLs from documents
+      final documents = appProvider.documents;
+      try {
+        final frontDoc = documents.firstWhere(
+          (d) => d.docType == DocumentType.aadhaarFront,
+        );
+        if (frontDoc.serverUrl != null) {
+          _aadhaarFrontUrl = frontDoc.serverUrl;
+        }
+      } catch (e) {
+        // Document not found
+      }
+
+      try {
+        final backDoc = documents.firstWhere(
+          (d) => d.docType == DocumentType.aadhaarBack,
+        );
+        if (backDoc.serverUrl != null) {
+          _aadhaarBackUrl = backDoc.serverUrl;
+        }
+      } catch (e) {
+        // Document not found
+      }
+
       _ocrCompleted = _aadhaarFrontUrl != null && _aadhaarBackUrl != null;
     }
   }
@@ -355,20 +376,8 @@ class _Step1ApplicantDetailsScreenState
       _saveField('applicant_aadhaar', aadhaar);
     }
 
-    // Extract address for permanent address (will be used in Step 4)
-    if (ocrData['address'] != null && ocrData['address']['value'] != null) {
-      _saveField('ocr_address', ocrData['address']['value'].toString());
-    }
-
-    // Extract pincode
-    if (ocrData['pincode'] != null) {
-      final pincode = ocrData['pincode'] is Map
-          ? ocrData['pincode']['value']
-          : ocrData['pincode'];
-      if (pincode != null) {
-        _saveField('ocr_pincode', pincode.toString());
-      }
-    }
+    // Note: Address and pincode from Aadhaar are typically for current address, not permanent
+    // Users will manually enter permanent address in Step 4
   }
 
   void _showManualEntryOption() {
