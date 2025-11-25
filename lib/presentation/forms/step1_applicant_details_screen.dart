@@ -94,8 +94,8 @@ class _Step1ApplicantDetailsScreenState
         final frontDoc = documents.firstWhere(
           (d) => d.docType == DocumentType.aadhaarFront,
         );
-        if (frontDoc.serverUrl != null) {
-          _aadhaarFrontUrl = frontDoc.serverUrl;
+        if (frontDoc.tusUrl != null) {
+          _aadhaarFrontUrl = frontDoc.tusUrl;
         }
       } catch (e) {
         // Document not found
@@ -105,8 +105,8 @@ class _Step1ApplicantDetailsScreenState
         final backDoc = documents.firstWhere(
           (d) => d.docType == DocumentType.aadhaarBack,
         );
-        if (backDoc.serverUrl != null) {
-          _aadhaarBackUrl = backDoc.serverUrl;
+        if (backDoc.tusUrl != null) {
+          _aadhaarBackUrl = backDoc.tusUrl;
         }
       } catch (e) {
         // Document not found
