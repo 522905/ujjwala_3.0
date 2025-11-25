@@ -12,10 +12,9 @@ import '../../core/utils/validators.dart';
 import '../../core/enums/app_enums.dart';
 import '../../core/config/api_config.dart';
 import '../../data/models/local_document.dart';
-import '../../data/repositories/document_repository.dart';
 import '../../data/services/tus_upload_service.dart';
-import '../../data/services/compression_service.dart';
 import 'package:uuid/uuid.dart';
+import '../widgets/ocr_scanner_screen.dart';
 import 'step2_bank_details_screen.dart';
 
 /// Step 1: Aadhaar Upload & Applicant Details
@@ -47,20 +46,15 @@ class _Step1ApplicantDetailsScreenState
   DateTime? _selectedDob;
   Caste? _selectedCaste;
 
-  // Aadhaar upload state
-  File? _aadhaarFrontFile;
-  File? _aadhaarBackFile;
+  // Aadhaar OCR state
   String? _aadhaarFrontUrl;
   String? _aadhaarBackUrl;
-  bool _isProcessingOCR = false;
   bool _ocrCompleted = false;
 
   // OTP state
   bool _mobileVerified = false;
   bool _otpSent = false;
   bool _showOtpField = false;
-
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -208,129 +202,29 @@ class _Step1ApplicantDetailsScreenState
     }
   }
 
-  // ==================== AADHAAR UPLOAD ====================
-  // Camera capture only (no gallery option)
-  Future<void> _captureAadhaarImage(bool isFront) async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 90,
-        maxWidth: 1520,
-      );
+  // ==================== AADHAAR OCR ====================
+  Future<void> _openAadhaarScanner() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const OcrScannerScreen(
+          ocrType: OcrType.aadhaar,
+          title: 'Scan Aadhaar Card',
+          subtitle: 'Capture both sides of Aadhaar for automatic verification',
+        ),
+      ),
+    );
 
-      if (image != null) {
-        setState(() {
-          if (isFront) {
-            _aadhaarFrontFile = File(image.path);
-          } else {
-            _aadhaarBackFile = File(image.path);
-          }
-        });
-      }
-    } catch (e) {
-      _showError('Error capturing image: ${e.toString()}');
+    if (result != null) {
+      _handleOcrResult(result);
     }
   }
 
-  // ==================== OCR PROCESSING ====================
-  Future<void> _processAadhaarOCR() async {
-    if (_aadhaarFrontFile == null || _aadhaarBackFile == null) {
-      _showError('Please capture both Aadhaar front and back images');
-      return;
-    }
+  void _handleOcrResult(Map<String, dynamic> ocrData) {
+    // Extract and save URLs
+    _aadhaarFrontUrl = ocrData['front_url'];
+    _aadhaarBackUrl = ocrData['back_url'];
 
-    setState(() => _isProcessingOCR = true);
-
-    try {
-      // Step 1: Upload images to TUS server
-      final frontUrl = await _uploadToTUS(_aadhaarFrontFile!);
-      final backUrl = await _uploadToTUS(_aadhaarBackFile!);
-
-      if (frontUrl == null || backUrl == null) {
-        throw Exception('Failed to upload Aadhaar images');
-      }
-
-      setState(() {
-        _aadhaarFrontUrl = frontUrl;
-        _aadhaarBackUrl = backUrl;
-      });
-
-      // Step 2: Call OCR API with uploaded image URLs
-      final response = await http.post(
-        Uri.parse(ApiConfig.aadhaarOcrEndpoint),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'uid_front_url': frontUrl,
-          'uid_back_url': backUrl,
-        },
-      ).timeout(const Duration(seconds: 45));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['status'] == 'success') {
-          final ocrData = json.decode(data['data']['text']);
-          _prefillFromOCR(ocrData);
-
-          // Save Aadhaar URLs to documents
-          final appProvider = Provider.of<ApplicationProvider>(context, listen: false);
-          final app = appProvider.currentApplication;
-
-          if (app != null) {
-            // Create front document
-            final frontDoc = LocalDocument(
-              localId: const Uuid().v4(),
-              applicationLocalId: app.localId,
-              docType: DocumentType.aadhaarFront.value,
-              tusUrl: frontUrl,
-              isUploaded: true,
-              uploadedAt: DateTime.now(),
-            );
-            await appProvider.addDocument(frontDoc);
-
-            // Create back document
-            final backDoc = LocalDocument(
-              localId: const Uuid().v4(),
-              applicationLocalId: app.localId,
-              docType: DocumentType.aadhaarBack.value,
-              tusUrl: backUrl,
-              isUploaded: true,
-              uploadedAt: DateTime.now(),
-            );
-            await appProvider.addDocument(backDoc);
-          }
-
-          setState(() => _ocrCompleted = true);
-          _showSuccess('Aadhaar verified! Details auto-filled ✓');
-        } else {
-          throw Exception(data['message'] ?? 'OCR failed');
-        }
-      } else {
-        throw Exception('OCR API error: ${response.statusCode}');
-      }
-    } catch (e) {
-      _showError('OCR failed: ${e.toString()}');
-      _showManualEntryOption();
-    } finally {
-      setState(() => _isProcessingOCR = false);
-    }
-  }
-
-  Future<String?> _uploadToTUS(File file) async {
-    try {
-      final tusService = TusUploadService();
-      final filename = 'aadhaar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      return await tusService.uploadWithRetry(
-        file: file,
-        filename: filename,
-      );
-    } catch (e) {
-      debugPrint('Upload error: $e');
-      return null;
-    }
-  }
-
-  void _prefillFromOCR(Map<String, dynamic> ocrData) {
     // Extract name
     if (ocrData['name'] != null && ocrData['name']['value'] != null) {
       final fullName = ocrData['name']['value'].toString().trim();
@@ -357,25 +251,21 @@ class _Step1ApplicantDetailsScreenState
     if (ocrData['dob'] != null && ocrData['dob']['value'] != null) {
       try {
         final dobStr = ocrData['dob']['value'].toString();
-        final parts = dobStr.split('/');
+        // Try common date formats
+        DateTime? parsedDate;
+        for (final format in ['dd/MM/yyyy', 'dd-MM-yyyy', 'yyyy-MM-dd']) {
+          try {
+            parsedDate = DateFormat(format).parseStrict(dobStr);
+            break;
+          } catch (_) {}
+        }
 
-        if (parts.length == 3) {
-          // DD/MM/YYYY format
-          final dob = DateTime(
-            int.parse(parts[2]),
-            int.parse(parts[1]),
-            int.parse(parts[0]),
-          );
-          setState(() => _selectedDob = dob);
-          _saveField('applicant_dob', dob);
-        } else if (parts.length == 1) {
-          // Year only
-          final dob = DateTime(int.parse(parts[0]), 1, 1);
-          setState(() => _selectedDob = dob);
-          _saveField('applicant_dob', dob);
+        if (parsedDate != null) {
+          setState(() => _selectedDob = parsedDate);
+          _saveField('applicant_dob', parsedDate.toIso8601String());
         }
       } catch (e) {
-        debugPrint('DOB parsing error: $e');
+        debugPrint('Error parsing DOB: $e');
       }
     }
 
@@ -386,38 +276,43 @@ class _Step1ApplicantDetailsScreenState
       _saveField('applicant_aadhaar', aadhaar);
     }
 
-    // Note: Address and pincode from Aadhaar are typically for current address, not permanent
-    // Users will manually enter permanent address in Step 4
+    // Save documents
+    _saveAadhaarDocuments();
+
+    setState(() => _ocrCompleted = true);
+    _showSuccess('Aadhaar verified! Details auto-filled ✓');
   }
 
-  void _showManualEntryOption() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('OCR Failed'),
-        content: const Text(
-          'Unable to extract details from Aadhaar.\n\n'
-          'You can:\n'
-          '1. Retry with better quality images\n'
-          '2. Enter details manually',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Enter Manually'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _aadhaarFrontFile = null;
-                _aadhaarBackFile = null;
-              });
-            },
-            child: const Text('Retry Upload'),
-          ),
-        ],
-      ),
+  Future<void> _saveAadhaarDocuments() async {
+    if (_aadhaarFrontUrl == null || _aadhaarBackUrl == null) return;
+
+    final appProvider = Provider.of<ApplicationProvider>(context, listen: false);
+    final app = appProvider.currentApplication;
+
+    if (app != null) {
+      // Create front document
+      final frontDoc = LocalDocument(
+        localId: const Uuid().v4(),
+        applicationLocalId: app.localId,
+        docType: DocumentType.aadhaarFront.value,
+        tusUrl: _aadhaarFrontUrl,
+        isUploaded: true,
+        uploadedAt: DateTime.now(),
+      );
+      await appProvider.addDocument(frontDoc);
+
+      // Create back document
+      final backDoc = LocalDocument(
+        localId: const Uuid().v4(),
+        applicationLocalId: app.localId,
+        docType: DocumentType.aadhaarBack.value,
+        tusUrl: _aadhaarBackUrl,
+        isUploaded: true,
+        uploadedAt: DateTime.now(),
+      );
+      await appProvider.addDocument(backDoc);
+    }
+  }
     );
   }
 
@@ -730,89 +625,56 @@ class _Step1ApplicantDetailsScreenState
                       SizedBox(height: 24.h),
                     ],
 
-                    // Aadhaar Upload Section
+                    // Aadhaar Scan Section
                     if (!_ocrCompleted) ...[
                       Container(
                         padding: EdgeInsets.all(16.w),
                         decoration: BoxDecoration(
-                          color: Colors.orange[50],
+                          color: Colors.blue[50],
                           borderRadius: BorderRadius.circular(12.r),
-                          border: Border.all(color: Colors.orange[200]!),
+                          border: Border.all(color: Colors.blue[200]!),
                         ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Icon(Icons.credit_card, color: Colors.orange[700]),
-                                SizedBox(width: 8.w),
-                                Text(
-                                  'Upload Aadhaar Card',
-                                  style: TextStyle(
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            Icon(
+                              Icons.document_scanner,
+                              size: 48.sp,
+                              color: Colors.blue[700],
+                            ),
+                            SizedBox(height: 12.h),
+                            Text(
+                              'Scan Aadhaar for Auto-Fill',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             SizedBox(height: 8.h),
                             Text(
-                              'Upload both sides for automatic verification',
+                              'Capture both sides of your Aadhaar card to automatically fill your details',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13.sp,
                                 color: Colors.grey[700],
                               ),
                             ),
                             SizedBox(height: 16.h),
-
-                            // Aadhaar Front
-                            _buildAadhaarUploadCard(
-                              label: 'Aadhaar Front',
-                              file: _aadhaarFrontFile,
-                              isFront: true,
-                            ),
-                            SizedBox(height: 16.h),
-
-                            // Aadhaar Back
-                            _buildAadhaarUploadCard(
-                              label: 'Aadhaar Back',
-                              file: _aadhaarBackFile,
-                              isFront: false,
-                            ),
-                            SizedBox(height: 16.h),
-
-                            // Process OCR Button
-                            if (_aadhaarFrontFile != null && _aadhaarBackFile != null) ...[
-                              SizedBox(
-                                width: double.infinity,
-                                height: 56.h,
-                                child: ElevatedButton.icon(
-                                  onPressed: _isProcessingOCR ? null : _processAadhaarOCR,
-                                  icon: _isProcessingOCR
-                                      ? SizedBox(
-                                          width: 20.w,
-                                          height: 20.h,
-                                          child: const CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Icon(Icons.auto_awesome),
-                                  label: Text(
-                                    _isProcessingOCR
-                                        ? 'Processing OCR (30s)...'
-                                        : 'Process & Auto-Fill Details',
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.purple[700],
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12.r),
-                                    ),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50.h,
+                              child: ElevatedButton.icon(
+                                onPressed: _openAadhaarScanner,
+                                icon: const Icon(Icons.qr_code_scanner),
+                                label: const Text('Scan Your Aadhaar'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue[700],
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12.r),
                                   ),
                                 ),
                               ),
-                            ],
+                            ),
                           ],
                         ),
                       ),
@@ -1097,66 +959,4 @@ class _Step1ApplicantDetailsScreenState
     );
   }
 
-  Widget _buildAadhaarUploadCard({
-    required String label,
-    required File? file,
-    required bool isFront,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: file != null ? Colors.green[300]! : Colors.grey[300]!,
-          width: 2,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (file != null)
-                Icon(Icons.check_circle, color: Colors.green[700], size: 20),
-            ],
-          ),
-          SizedBox(height: 12.h),
-
-          if (file != null) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8.r),
-              child: Image.file(
-                file,
-                height: 150.h,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-            SizedBox(height: 12.h),
-          ],
-
-          // Camera only - no gallery option
-          ElevatedButton.icon(
-            onPressed: () => _captureAadhaarImage(isFront),
-            icon: const Icon(Icons.camera_alt),
-            label: Text(file != null ? 'Recapture' : 'Capture from Camera'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue[700],
-              foregroundColor: Colors.white,
-              minimumSize: Size(double.infinity, 48.h),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
