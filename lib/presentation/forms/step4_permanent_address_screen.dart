@@ -66,7 +66,64 @@ class _Step4PermanentAddressScreenState
       _selectedState = permanentAddress.state != null
           ? IndianState.fromValue(permanentAddress.state!)
           : null;
+    } else {
+      // Pre-fill from Step 1 OCR data if no permanent address exists yet
+      final app = appProvider.currentApplication;
+      if (app != null) {
+        // Try to parse OCR address and extract fields
+        final ocrAddress = app.getField('ocr_address'); // Full address from Aadhaar
+        final ocrPincode = app.getField('ocr_pincode');
+
+        if (ocrAddress != null && ocrAddress.isNotEmpty) {
+          // Parse the full address string and try to extract components
+          // Aadhaar address format is usually: House, Street, Area, City, District, State, Pincode
+          _prefillFromOcrAddress(ocrAddress);
+        }
+
+        if (ocrPincode != null && ocrPincode.isNotEmpty) {
+          _pincodeController.text = ocrPincode;
+        }
+      }
     }
+  }
+
+  /// Parse and prefill address fields from OCR extracted address string
+  void _prefillFromOcrAddress(String fullAddress) {
+    // Split address by commas or common delimiters
+    final parts = fullAddress.split(RegExp(r'[,\n]')).map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+
+    if (parts.isEmpty) return;
+
+    // Try to intelligently map address parts
+    // Typical Aadhaar format: House/Building, Street, Area, City/Village, District, State - Pincode
+    if (parts.length >= 1) {
+      _houseNumberController.text = parts[0];
+    }
+    if (parts.length >= 2) {
+      _streetController.text = parts[1];
+    }
+    if (parts.length >= 3) {
+      _areaController.text = parts[2];
+    }
+    if (parts.length >= 4) {
+      _cityController.text = parts[3];
+    }
+    if (parts.length >= 5) {
+      _districtController.text = parts[4];
+    }
+
+    // Show info that address was pre-filled from Aadhaar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Permanent address pre-filled from Aadhaar. Please verify and select state.'),
+            backgroundColor: Colors.blue[700],
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
   }
 
   @override

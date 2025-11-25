@@ -38,45 +38,74 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
     );
   }
 
-  // Required documents
-  final List<Map<String, dynamic>> _requiredDocs = [
-    {
-      'type': DocumentType.applicantPhoto,
-      'title': 'Applicant Photo',
-      'description': 'Recent passport-size photograph',
-      'mandatory': true,
-    },
-    {
-      'type': DocumentType.currentAddressPoa,
-      'title': 'Current Address Proof',
-      'description': 'Proof of current address',
-      'mandatory': true,
-    },
-    {
-      'type': DocumentType.permanentAddressPoa,
-      'title': 'Permanent Address Proof',
-      'description': 'Proof of permanent address',
-      'mandatory': true,
-    },
-    {
-      'type': DocumentType.familyCompositionDoc,
-      'title': 'Family Composition Document',
-      'description': 'Ration card or family certificate',
-      'mandatory': true,
-    },
-    {
-      'type': DocumentType.bankProof,
-      'title': 'Bank Proof',
-      'description': 'Bank passbook or cancelled cheque',
-      'mandatory': true,
-    },
-    {
-      'type': DocumentType.casteCertificate,
-      'title': 'Caste Certificate',
-      'description': 'SC/ST/OBC certificate',
-      'mandatory': false,
-    },
-  ];
+  /// Get list of required documents based on applicant's data
+  /// Conditional documents:
+  /// - Caste certificate: Only if caste != General
+  /// - Migration certificate: Only if permanent_state != current_state
+  List<Map<String, dynamic>> _getRequiredDocuments(BuildContext context) {
+    final appProvider = Provider.of<ApplicationProvider>(context, listen: false);
+    final app = appProvider.currentApplication;
+    final currentAddress = appProvider.currentAddress;
+    final permanentAddress = appProvider.permanentAddress;
+
+    // Base mandatory documents
+    final docs = <Map<String, dynamic>>[
+      {
+        'type': DocumentType.applicantPhoto,
+        'title': 'Applicant Photo',
+        'description': 'Recent passport-size photograph',
+        'mandatory': true,
+      },
+      {
+        'type': DocumentType.currentAddressPoa,
+        'title': 'Current Address Proof',
+        'description': 'Proof of current address',
+        'mandatory': true,
+      },
+      {
+        'type': DocumentType.permanentAddressPoa,
+        'title': 'Permanent Address Proof',
+        'description': 'Proof of permanent address',
+        'mandatory': true,
+      },
+      {
+        'type': DocumentType.familyCompositionDoc,
+        'title': 'Family Composition Document',
+        'description': 'Ration card or family certificate',
+        'mandatory': true,
+      },
+    ];
+
+    // Conditional: Caste Certificate (only if caste is not General)
+    final caste = app?.applicantCaste;
+    if (caste != null && caste != 'GENERAL' && caste.toLowerCase() != 'general') {
+      docs.add({
+        'type': DocumentType.casteCertificate,
+        'title': 'Caste Certificate',
+        'description': 'SC/ST/OBC certificate (Required for $caste category)',
+        'mandatory': true,
+        'conditional': true,
+      });
+    }
+
+    // Conditional: Migration Certificate (only if states are different)
+    final currentState = currentAddress?.state;
+    final permanentState = permanentAddress?.state;
+    if (currentState != null &&
+        permanentState != null &&
+        currentState != permanentState) {
+      docs.add({
+        'type': DocumentType.migrationCertificate,
+        'title': 'Migration Certificate',
+        'description':
+            'Required as permanent state differs from current state',
+        'mandatory': true,
+        'conditional': true,
+      });
+    }
+
+    return docs;
+  }
 
   Future<void> _captureDocument(DocumentType docType) async {
     if (_isUploading) return;
@@ -164,9 +193,10 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
   void _proceedToNextStep() {
     final appProvider = Provider.of<ApplicationProvider>(context, listen: false);
     final documents = appProvider.documents;
+    final requiredDocs = _getRequiredDocuments(context);
 
     // Check if all mandatory documents are uploaded
-    final missingDocs = _requiredDocs
+    final missingDocs = requiredDocs
         .where((doc) =>
             doc['mandatory'] &&
             !_isDocumentUploaded(documents, doc['type']))
@@ -213,6 +243,13 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
               child: Consumer<ApplicationProvider>(
                 builder: (context, appProvider, _) {
                   final documents = appProvider.documents;
+                  final requiredDocs = _getRequiredDocuments(context);
+                  final mandatoryCount = requiredDocs.where((d) => d['mandatory']).length;
+                  final uploadedMandatoryCount = requiredDocs
+                      .where((d) =>
+                          d['mandatory'] &&
+                          _isDocumentUploaded(documents, d['type']))
+                      .length;
 
                   return Column(
                     children: [
@@ -231,7 +268,7 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
                               ),
                               SizedBox(height: 8.h),
                               Text(
-                                'Step 6 of 7 • ${documents.length}/6 uploaded',
+                                'Step 6 of 7 • $uploadedMandatoryCount/$mandatoryCount uploaded',
                                 style: TextStyle(
                                   fontSize: 14.sp,
                                   color: Colors.grey[600],
@@ -252,7 +289,7 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
                                     SizedBox(width: 12.w),
                                     Expanded(
                                       child: Text(
-                                        'All documents are mandatory. Photos will be compressed and uploaded securely.',
+                                        'Document requirements are based on your application details. Photos will be compressed and uploaded securely.',
                                         style: TextStyle(
                                           fontSize: 13.sp,
                                           color: Colors.blue[900],
@@ -265,9 +302,10 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
                               SizedBox(height: 24.h),
 
                               // Document upload cards
-                              ..._requiredDocs.map((doc) {
+                              ...requiredDocs.map((doc) {
                                 final isUploaded = _isDocumentUploaded(
                                     documents, doc['type']);
+                                final isConditional = doc['conditional'] == true;
 
                                 return Container(
                                   margin: EdgeInsets.only(bottom: 16.h),
@@ -275,10 +313,15 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
                                     border: Border.all(
                                       color: isUploaded
                                           ? Colors.green
-                                          : Colors.grey[300]!,
+                                          : isConditional
+                                              ? Colors.orange[300]!
+                                              : Colors.grey[300]!,
                                       width: isUploaded ? 2 : 1,
                                     ),
                                     borderRadius: BorderRadius.circular(12.r),
+                                    color: isConditional && !isUploaded
+                                        ? Colors.orange[50]
+                                        : null,
                                   ),
                                   child: ListTile(
                                     contentPadding: EdgeInsets.all(16.w),
@@ -287,25 +330,57 @@ class _Step6DocumentsScreenState extends State<Step6DocumentsScreen> {
                                       decoration: BoxDecoration(
                                         color: isUploaded
                                             ? Colors.green[50]
-                                            : Colors.grey[100],
+                                            : isConditional
+                                                ? Colors.orange[50]
+                                                : Colors.grey[100],
                                         borderRadius:
                                             BorderRadius.circular(8.r),
                                       ),
                                       child: Icon(
                                         isUploaded
                                             ? Icons.check_circle
-                                            : Icons.upload_file,
+                                            : isConditional
+                                                ? Icons.info
+                                                : Icons.upload_file,
                                         color: isUploaded
                                             ? Colors.green
-                                            : Colors.grey[600],
+                                            : isConditional
+                                                ? Colors.orange[700]
+                                                : Colors.grey[600],
                                       ),
                                     ),
-                                    title: Text(
-                                      doc['title'],
-                                      style: TextStyle(
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                    title: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            doc['title'],
+                                            style: TextStyle(
+                                              fontSize: 16.sp,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isConditional)
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 8.w,
+                                              vertical: 4.h,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.orange[100],
+                                              borderRadius:
+                                                  BorderRadius.circular(4.r),
+                                            ),
+                                            child: Text(
+                                              'CONDITIONAL',
+                                              style: TextStyle(
+                                                fontSize: 9.sp,
+                                                color: Colors.orange[900],
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                     subtitle: Column(
                                       crossAxisAlignment:
