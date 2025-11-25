@@ -8,6 +8,8 @@ import 'dart:convert';
 import '../../providers/application_provider.dart';
 import '../../core/utils/validators.dart';
 import '../../data/repositories/document_repository.dart';
+import '../../data/services/tus_upload_service.dart';
+import '../../data/services/compression_service.dart';
 import 'step3_current_address_screen.dart';
 
 /// Step 2: Bank Details
@@ -46,7 +48,10 @@ class _Step2BankDetailsScreenState extends State<Step2BankDetailsScreen> {
   bool _isUploadingPassbook = false;
 
   final _imagePicker = ImagePicker();
-  final _documentRepo = DocumentRepository();
+  final _documentRepo = DocumentRepository(
+    TusUploadService(),
+    CompressionService(),
+  );
 
   @override
   void initState() {
@@ -65,7 +70,17 @@ class _Step2BankDetailsScreenState extends State<Step2BankDetailsScreen> {
       _branchController.text = app.bankBranch ?? '';
       _ifscController.text = app.bankIfsc ?? '';
       _accountNumberController.text = app.bankAccountNumber ?? '';
-      _passbookUrl = app.bankPassbookUrl;
+
+      // Load passbook URL from documents
+      final documents = appProvider.documents;
+      try {
+        final passbookDoc = documents.firstWhere(
+          (d) => d.docType == DocumentType.bankProof.value,
+        );
+        _passbookUrl = passbookDoc.tusUrl;
+      } catch (e) {
+        // Document not found
+      }
 
       // If IFSC already exists and bank name is filled, mark as valid
       if (app.bankIfsc != null &&

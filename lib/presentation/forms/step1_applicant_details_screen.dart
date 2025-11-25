@@ -11,6 +11,8 @@ import '../../providers/auth_provider.dart';
 import '../../core/utils/validators.dart';
 import '../../core/enums/app_enums.dart';
 import '../../data/repositories/document_repository.dart';
+import '../../data/services/tus_upload_service.dart';
+import '../../data/services/compression_service.dart';
 import 'step2_bank_details_screen.dart';
 
 /// Step 1: Aadhaar Upload & Applicant Details
@@ -312,7 +314,10 @@ class _Step1ApplicantDetailsScreenState
     try {
       // TODO: Implement TUS upload
       // For now, using DocumentRepository if available
-      final docRepo = DocumentRepository();
+      final docRepo = DocumentRepository(
+        TusUploadService(),
+        CompressionService(),
+      );
       return await docRepo.uploadFile(file);
     } catch (e) {
       debugPrint('Upload error: $e');

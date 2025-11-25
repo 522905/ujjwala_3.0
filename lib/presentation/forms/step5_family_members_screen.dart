@@ -470,7 +470,7 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
   void _onRelationChanged(RelationToApplicant? relation) {
     setState(() {
       _selectedRelation = relation;
-      _isSelfMember = relation == RelationToApplicant.SELF;
+      _isSelfMember = relation == RelationToApplicant.self;
     });
 
     if (_isSelfMember) {
@@ -586,8 +586,8 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
       relationToApplicant: _selectedRelation!.value,
       gender: _selectedGender!.value,
       dob: _selectedDob!,
-      aadhaarFrontUrl: aadhaarFrontUrl,
-      aadhaarBackUrl: aadhaarBackUrl,
+      uidFrontTusUrl: aadhaarFrontUrl,
+      uidBackTusUrl: aadhaarBackUrl,
     );
 
     Navigator.pop(context, member);
@@ -644,7 +644,7 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
                 value: _selectedRelation,
                 decoration: const InputDecoration(labelText: 'Relation *'),
                 items: RelationToApplicant.values.map((relation) {
-                  final isSelf = relation == RelationToApplicant.SELF;
+                  final isSelf = relation == RelationToApplicant.self;
                   final isDisabled = isSelf && hasSelfMember && !_isSelfMember;
 
                   return DropdownMenuItem(
