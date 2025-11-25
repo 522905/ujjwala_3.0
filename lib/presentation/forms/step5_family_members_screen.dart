@@ -447,6 +447,7 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
   RelationToApplicant? _selectedRelation;
   Gender? _selectedGender;
   DateTime? _selectedDob;
+  bool _isSelfMember = false;
 
   @override
   void initState() {
@@ -461,6 +462,47 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
           ? Gender.fromValue(widget.member!.gender!)
           : null;
       _selectedDob = widget.member!.dob;
+      _isSelfMember = widget.member!.isSelf;
+    }
+  }
+
+  /// Auto-fill from Step 1 applicant data when SELF is selected
+  void _onRelationChanged(RelationToApplicant? relation) {
+    setState(() {
+      _selectedRelation = relation;
+      _isSelfMember = relation == RelationToApplicant.SELF;
+    });
+
+    if (_isSelfMember) {
+      // Get applicant data from Step 1
+      final appProvider = Provider.of<ApplicationProvider>(context, listen: false);
+      final app = appProvider.currentApplication;
+
+      if (app != null) {
+        // Auto-fill from applicant details
+        _fullNameController.text = app.applicantFullName ?? '';
+        _aadhaarController.text = app.applicantAadhaar ?? '';
+
+        // Parse gender
+        if (app.applicantGender != null) {
+          _selectedGender = Gender.fromValue(app.applicantGender!);
+        }
+
+        // Parse DOB
+        if (app.applicantDob != null) {
+          _selectedDob = app.applicantDob;
+        }
+
+        setState(() {});
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Applicant details auto-filled from Step 1. Aadhaar photos will be reused.'),
+            backgroundColor: Colors.green[700],
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -510,6 +552,16 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
       return;
     }
 
+    // If SELF member, reuse Step 1 Aadhaar photo URLs
+    String? aadhaarFrontUrl;
+    String? aadhaarBackUrl;
+
+    if (_isSelfMember) {
+      // Get Aadhaar URLs from Step 1
+      aadhaarFrontUrl = app.getField('aadhaar_front_url');
+      aadhaarBackUrl = app.getField('aadhaar_back_url');
+    }
+
     final member = LocalFamilyMember(
       localId: widget.member?.localId ?? const Uuid().v4(),
       applicationLocalId: app.localId,
@@ -518,6 +570,8 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
       relationToApplicant: _selectedRelation!.value,
       gender: _selectedGender!.value,
       dob: _selectedDob!,
+      aadhaarFrontUrl: aadhaarFrontUrl,
+      aadhaarBackUrl: aadhaarBackUrl,
     );
 
     Navigator.pop(context, member);
@@ -531,6 +585,9 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final appProvider = Provider.of<ApplicationProvider>(context);
+    final hasSelfMember = appProvider.familyMembers.any((m) => m.isSelf);
+
     return AlertDialog(
       title: Text(widget.member == null ? 'Add Family Member' : 'Edit Family Member'),
       content: SingleChildScrollView(
@@ -539,9 +596,68 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Info banner for SELF member
+              if (_isSelfMember)
+                Container(
+                  padding: EdgeInsets.all(12.w),
+                  margin: EdgeInsets.only(bottom: 16.h),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(color: Colors.green.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green[700], size: 20.sp),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          'Details auto-filled from Step 1. No Aadhaar re-upload needed.',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.green[900],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Relation dropdown (must be first to trigger auto-fill)
+              DropdownButtonFormField<RelationToApplicant>(
+                value: _selectedRelation,
+                decoration: const InputDecoration(labelText: 'Relation *'),
+                items: RelationToApplicant.values.map((relation) {
+                  final isSelf = relation == RelationToApplicant.SELF;
+                  final isDisabled = isSelf && hasSelfMember && !_isSelfMember;
+
+                  return DropdownMenuItem(
+                    value: relation,
+                    enabled: !isDisabled,
+                    child: Text(
+                      relation.name + (isDisabled ? ' (Already added)' : ''),
+                      style: TextStyle(
+                        color: isDisabled ? Colors.grey : null,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: _onRelationChanged,
+              ),
+              SizedBox(height: 16.h),
+
+              // Full Name (readonly for SELF)
               TextFormField(
                 controller: _fullNameController,
-                decoration: const InputDecoration(labelText: 'Full Name *'),
+                decoration: InputDecoration(
+                  labelText: 'Full Name *',
+                  filled: _isSelfMember,
+                  fillColor: _isSelfMember ? Colors.green[50] : null,
+                  suffixIcon: _isSelfMember
+                      ? Icon(Icons.lock, size: 16.sp, color: Colors.green[700])
+                      : null,
+                ),
+                readOnly: _isSelfMember,
                 textCapitalization: TextCapitalization.words,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -551,9 +667,19 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
                 },
               ),
               SizedBox(height: 16.h),
+
+              // Aadhaar (readonly for SELF)
               TextFormField(
                 controller: _aadhaarController,
-                decoration: const InputDecoration(labelText: 'Aadhaar Number *'),
+                decoration: InputDecoration(
+                  labelText: 'Aadhaar Number *',
+                  filled: _isSelfMember,
+                  fillColor: _isSelfMember ? Colors.green[50] : null,
+                  suffixIcon: _isSelfMember
+                      ? Icon(Icons.lock, size: 16.sp, color: Colors.green[700])
+                      : null,
+                ),
+                readOnly: _isSelfMember,
                 keyboardType: TextInputType.number,
                 maxLength: 12,
                 validator: (value) {
@@ -567,34 +693,37 @@ class _FamilyMemberDialogState extends State<FamilyMemberDialog> {
                 },
               ),
               SizedBox(height: 16.h),
-              DropdownButtonFormField<RelationToApplicant>(
-                value: _selectedRelation,
-                decoration: const InputDecoration(labelText: 'Relation *'),
-                items: RelationToApplicant.values.map((relation) {
-                  return DropdownMenuItem(
-                    value: relation,
-                    child: Text(relation.name),
-                  );
-                }).toList(),
-                onChanged: (value) => setState(() => _selectedRelation = value),
-              ),
-              SizedBox(height: 16.h),
+
+              // Gender (readonly for SELF)
               DropdownButtonFormField<Gender>(
                 value: _selectedGender,
-                decoration: const InputDecoration(labelText: 'Gender *'),
+                decoration: InputDecoration(
+                  labelText: 'Gender *',
+                  filled: _isSelfMember,
+                  fillColor: _isSelfMember ? Colors.green[50] : null,
+                ),
                 items: Gender.values.map((gender) {
                   return DropdownMenuItem(
                     value: gender,
                     child: Text(gender.name),
                   );
                 }).toList(),
-                onChanged: (value) => setState(() => _selectedGender = value),
+                onChanged: _isSelfMember ? null : (value) => setState(() => _selectedGender = value),
               ),
               SizedBox(height: 16.h),
+
+              // DOB (readonly for SELF)
               InkWell(
-                onTap: () => _selectDate(context),
+                onTap: _isSelfMember ? null : () => _selectDate(context),
                 child: InputDecorator(
-                  decoration: const InputDecoration(labelText: 'Date of Birth *'),
+                  decoration: InputDecoration(
+                    labelText: 'Date of Birth *',
+                    filled: _isSelfMember,
+                    fillColor: _isSelfMember ? Colors.green[50] : null,
+                    suffixIcon: _isSelfMember
+                        ? Icon(Icons.lock, size: 16.sp, color: Colors.green[700])
+                        : null,
+                  ),
                   child: Text(
                     _selectedDob != null
                         ? DateFormat('dd/MM/yyyy').format(_selectedDob!)

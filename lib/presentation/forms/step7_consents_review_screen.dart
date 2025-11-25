@@ -22,6 +22,13 @@ class Step7ConsentsReviewScreen extends StatefulWidget {
 }
 
 class _Step7ConsentsReviewScreenState extends State<Step7ConsentsReviewScreen> {
+  // Track which sections are expanded
+  bool _applicantExpanded = true;
+  bool _bankExpanded = false;
+  bool _addressExpanded = false;
+  bool _familyExpanded = false;
+  bool _documentsExpanded = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,10 +78,13 @@ class _Step7ConsentsReviewScreenState extends State<Step7ConsentsReviewScreen> {
                         ),
                         SizedBox(height: 24.h),
 
-                        // Application Summary
-                        _buildSection(
-                          title: 'Application Summary',
-                          icon: Icons.description,
+                        // Application Summary (Step 1)
+                        _buildCollapsibleSection(
+                          title: 'Step 1: Applicant Details',
+                          icon: Icons.person,
+                          isExpanded: _applicantExpanded,
+                          onToggle: () => setState(() => _applicantExpanded = !_applicantExpanded),
+                          onEdit: () => Navigator.pop(context),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -112,12 +122,18 @@ class _Step7ConsentsReviewScreenState extends State<Step7ConsentsReviewScreen> {
                             ],
                           ),
                         ),
-                        SizedBox(height: 16.h),
+                        SizedBox(height: 12.h),
 
-                        // Bank Details Summary
-                        _buildSection(
-                          title: 'Bank Details',
+                        // Bank Details Summary (Step 2)
+                        _buildCollapsibleSection(
+                          title: 'Step 2: Bank Details',
                           icon: Icons.account_balance,
+                          isExpanded: _bankExpanded,
+                          onToggle: () => setState(() => _bankExpanded = !_bankExpanded),
+                          onEdit: () {
+                            // Pop back to Step 2
+                            Navigator.popUntil(context, (route) => route.isFirst);
+                          },
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -140,50 +156,145 @@ class _Step7ConsentsReviewScreenState extends State<Step7ConsentsReviewScreen> {
                             ],
                           ),
                         ),
-                        SizedBox(height: 16.h),
+                        SizedBox(height: 12.h),
 
-                        // Addresses Summary
-                        _buildSection(
-                          title: 'Addresses',
+                        // Addresses Summary (Step 3 & 4)
+                        _buildCollapsibleSection(
+                          title: 'Step 3 & 4: Addresses',
                           icon: Icons.location_on,
+                          isExpanded: _addressExpanded,
+                          onToggle: () => setState(() => _addressExpanded = !_addressExpanded),
+                          onEdit: () {
+                            // Pop back to address steps
+                            Navigator.popUntil(context, (route) => route.isFirst);
+                          },
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildSummaryItem(
-                                'Current Address',
-                                appProvider.currentAddress?.formattedAddress ??
-                                    'N/A',
+                              Text(
+                                'Current Address:',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue[700],
+                                ),
                               ),
-                              SizedBox(height: 8.h),
-                              _buildSummaryItem(
-                                'Permanent Address',
-                                appProvider.permanentAddress
-                                        ?.formattedAddress ??
-                                    'N/A',
+                              SizedBox(height: 4.h),
+                              Text(
+                                appProvider.currentAddress?.formattedAddress ?? 'N/A',
+                                style: TextStyle(fontSize: 13.sp),
+                              ),
+                              SizedBox(height: 12.h),
+                              Text(
+                                'Permanent Address:',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue[700],
+                                ),
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                appProvider.permanentAddress?.formattedAddress ?? 'N/A',
+                                style: TextStyle(fontSize: 13.sp),
                               ),
                             ],
                           ),
                         ),
-                        SizedBox(height: 16.h),
+                        SizedBox(height: 12.h),
 
-                        // Family Members Summary
-                        _buildSection(
-                          title: 'Family Members',
+                        // Family Members Summary (Step 5)
+                        _buildCollapsibleSection(
+                          title: 'Step 5: Family Members',
                           icon: Icons.people,
-                          child: Text(
-                            '${appProvider.familyMembers.length} member(s) added',
-                            style: TextStyle(fontSize: 14.sp),
+                          isExpanded: _familyExpanded,
+                          onToggle: () => setState(() => _familyExpanded = !_familyExpanded),
+                          onEdit: () {
+                            // Pop back to Step 5
+                            Navigator.popUntil(context, (route) => route.isFirst);
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: appProvider.familyMembers.isEmpty
+                                ? [
+                                    Text(
+                                      'No family members added',
+                                      style: TextStyle(
+                                        fontSize: 13.sp,
+                                        color: Colors.grey[600],
+                                      ),
+                                    )
+                                  ]
+                                : appProvider.familyMembers.map((member) {
+                                    return Padding(
+                                      padding: EdgeInsets.only(bottom: 8.h),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            member.isSelf ? Icons.star : Icons.person,
+                                            size: 16.sp,
+                                            color: member.isSelf
+                                                ? Colors.blue[700]
+                                                : Colors.grey[600],
+                                          ),
+                                          SizedBox(width: 8.w),
+                                          Expanded(
+                                            child: Text(
+                                              '${member.fullName} - ${member.relationToApplicant != null ? RelationToApplicant.fromValue(member.relationToApplicant!).name : "N/A"}',
+                                              style: TextStyle(fontSize: 13.sp),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
                           ),
                         ),
-                        SizedBox(height: 16.h),
+                        SizedBox(height: 12.h),
 
-                        // Documents Summary
-                        _buildSection(
-                          title: 'Documents',
+                        // Documents Summary (Step 6)
+                        _buildCollapsibleSection(
+                          title: 'Step 6: Documents',
                           icon: Icons.upload_file,
-                          child: Text(
-                            '${appProvider.documents.length} document(s) uploaded',
-                            style: TextStyle(fontSize: 14.sp),
+                          isExpanded: _documentsExpanded,
+                          onToggle: () => setState(() => _documentsExpanded = !_documentsExpanded),
+                          onEdit: () {
+                            // Pop back to Step 6
+                            Navigator.pop(context);
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: appProvider.documents.isEmpty
+                                ? [
+                                    Text(
+                                      'No documents uploaded',
+                                      style: TextStyle(
+                                        fontSize: 13.sp,
+                                        color: Colors.grey[600],
+                                      ),
+                                    )
+                                  ]
+                                : appProvider.documents.map((doc) {
+                                    return Padding(
+                                      padding: EdgeInsets.only(bottom: 8.h),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle,
+                                            size: 16.sp,
+                                            color: Colors.green,
+                                          ),
+                                          SizedBox(width: 8.w),
+                                          Expanded(
+                                            child: Text(
+                                              doc.docType?.display ?? 'Document',
+                                              style: TextStyle(fontSize: 13.sp),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
                           ),
                         ),
                         SizedBox(height: 24.h),
@@ -373,6 +484,87 @@ class _Step7ConsentsReviewScreenState extends State<Step7ConsentsReviewScreen> {
     );
   }
 
+  /// Collapsible section with edit button
+  Widget _buildCollapsibleSection({
+    required String title,
+    required IconData icon,
+    required bool isExpanded,
+    required VoidCallback onToggle,
+    required VoidCallback onEdit,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with expand/collapse and edit button
+          InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(12.r),
+              bottom: isExpanded ? Radius.zero : Radius.circular(12.r),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(16.w),
+              child: Row(
+                children: [
+                  Icon(icon, color: Colors.blue[700], size: 20.sp),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  // Edit button
+                  IconButton(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit),
+                    color: Colors.blue[700],
+                    iconSize: 20.sp,
+                    tooltip: 'Edit',
+                    padding: EdgeInsets.all(8.w),
+                    constraints: const BoxConstraints(),
+                  ),
+                  SizedBox(width: 8.w),
+                  // Expand/collapse icon
+                  Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: Colors.grey[600],
+                    size: 24.sp,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Content (shown when expanded)
+          if (isExpanded)
+            Container(
+              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Colors.grey[200]!),
+                ),
+              ),
+              child: child,
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Non-collapsible section (for consents)
   Widget _buildSection({
     required String title,
     required IconData icon,

@@ -51,11 +51,15 @@ class _Step3CurrentAddressScreenState extends State<Step3CurrentAddressScreen> {
       _areaController.text = address.villagePanchayatArea ?? '';
       _landmarkController.text = address.landmark ?? '';
       _cityController.text = address.cityTown ?? '';
-      _districtController.text = address.district ?? '';
+      _districtController.text = address.district ?? 'Ludhiana'; // Default to Ludhiana
       _pincodeController.text = address.pincode ?? '';
       _selectedState = address.state != null
           ? IndianState.fromValue(address.state!)
-          : null;
+          : IndianState.Punjab; // Default to Punjab
+    } else {
+      // Set defaults for new address
+      _districtController.text = 'Ludhiana';
+      _selectedState = IndianState.Punjab;
     }
   }
 
