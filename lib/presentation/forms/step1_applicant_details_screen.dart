@@ -10,9 +10,12 @@ import '../../providers/application_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/utils/validators.dart';
 import '../../core/enums/app_enums.dart';
+import '../../core/config/api_config.dart';
+import '../../data/models/local_document.dart';
 import '../../data/repositories/document_repository.dart';
 import '../../data/services/tus_upload_service.dart';
 import '../../data/services/compression_service.dart';
+import 'package:uuid/uuid.dart';
 import 'step2_bank_details_screen.dart';
 
 /// Step 1: Aadhaar Upload & Applicant Details
@@ -178,9 +181,9 @@ class _Step1ApplicantDetailsScreenState
     }
 
     try {
-      // TODO: Replace with your actual OTP verification API endpoint
       final response = await http.post(
-        Uri.parse('YOUR_API_BASE_URL/communication_log/verify-otp-generic/'),
+        Uri.parse(ApiConfig.verifyOtpEndpoint),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {
           'mobile': mobile,
           'otp': otp,
@@ -206,28 +209,7 @@ class _Step1ApplicantDetailsScreenState
   }
 
   // ==================== AADHAAR UPLOAD ====================
-  Future<void> _pickAadhaarImage(bool isFront) async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 90,
-        maxWidth: 1520,
-      );
-
-      if (image != null) {
-        setState(() {
-          if (isFront) {
-            _aadhaarFrontFile = File(image.path);
-          } else {
-            _aadhaarBackFile = File(image.path);
-          }
-        });
-      }
-    } catch (e) {
-      _showError('Error picking image: ${e.toString()}');
-    }
-  }
-
+  // Camera capture only (no gallery option)
   Future<void> _captureAadhaarImage(bool isFront) async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -253,7 +235,7 @@ class _Step1ApplicantDetailsScreenState
   // ==================== OCR PROCESSING ====================
   Future<void> _processAadhaarOCR() async {
     if (_aadhaarFrontFile == null || _aadhaarBackFile == null) {
-      _showError('Please upload both Aadhaar front and back images');
+      _showError('Please capture both Aadhaar front and back images');
       return;
     }
 
@@ -273,10 +255,10 @@ class _Step1ApplicantDetailsScreenState
         _aadhaarBackUrl = backUrl;
       });
 
-      // Step 2: Call OCR API
-      // TODO: Replace with your actual OCR API endpoint
+      // Step 2: Call OCR API with uploaded image URLs
       final response = await http.post(
-        Uri.parse('YOUR_API_BASE_URL/app_utilities/application-utilities/get_details_for_aadhar/'),
+        Uri.parse(ApiConfig.aadhaarOcrEndpoint),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {
           'uid_front_url': frontUrl,
           'uid_back_url': backUrl,
@@ -290,9 +272,33 @@ class _Step1ApplicantDetailsScreenState
           final ocrData = json.decode(data['data']['text']);
           _prefillFromOCR(ocrData);
 
-          // Save Aadhaar URLs
-          _saveField('uid_front_link', frontUrl);
-          _saveField('uid_back_link', backUrl);
+          // Save Aadhaar URLs to documents
+          final appProvider = Provider.of<ApplicationProvider>(context, listen: false);
+          final app = appProvider.currentApplication;
+
+          if (app != null) {
+            // Create front document
+            final frontDoc = LocalDocument(
+              localId: const Uuid().v4(),
+              applicationLocalId: app.localId,
+              docType: DocumentType.aadhaarFront.value,
+              tusUrl: frontUrl,
+              isUploaded: true,
+              uploadedAt: DateTime.now(),
+            );
+            await appProvider.addDocument(frontDoc);
+
+            // Create back document
+            final backDoc = LocalDocument(
+              localId: const Uuid().v4(),
+              applicationLocalId: app.localId,
+              docType: DocumentType.aadhaarBack.value,
+              tusUrl: backUrl,
+              isUploaded: true,
+              uploadedAt: DateTime.now(),
+            );
+            await appProvider.addDocument(backDoc);
+          }
 
           setState(() => _ocrCompleted = true);
           _showSuccess('Aadhaar verified! Details auto-filled ✓');
@@ -1138,30 +1144,16 @@ class _Step1ApplicantDetailsScreenState
             SizedBox(height: 12.h),
           ],
 
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickAadhaarImage(isFront),
-                  icon: const Icon(Icons.photo_library),
-                  label: Text(file != null ? 'Change' : 'Gallery'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blue[700],
-                  ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _captureAadhaarImage(isFront),
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Camera'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blue[700],
-                  ),
-                ),
-              ),
-            ],
+          // Camera only - no gallery option
+          ElevatedButton.icon(
+            onPressed: () => _captureAadhaarImage(isFront),
+            icon: const Icon(Icons.camera_alt),
+            label: Text(file != null ? 'Recapture' : 'Capture from Camera'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue[700],
+              foregroundColor: Colors.white,
+              minimumSize: Size(double.infinity, 48.h),
+            ),
           ),
         ],
       ),
